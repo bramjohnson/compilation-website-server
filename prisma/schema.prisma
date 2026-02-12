@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  name         String?
+  avatarURL    String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  compilations Compilation[]
+}
+
+model NintendoMusicLibraryGameAlbum {
+  id     Int                         @id @default(autoincrement())
+  name   String
+  tracks NintendoMusicLibraryTrack[]
+}
+
+model NintendoMusicLibraryTrack {
+  id                              Int                            @id @default(autoincrement())
+  title                           String
+  duration                        Int
+  nintendoMusicLibraryGameAlbum   NintendoMusicLibraryGameAlbum? @relation(fields: [nintendoMusicLibraryGameAlbumId], references: [id])
+  nintendoMusicLibraryGameAlbumId Int?
+  userDefinedTracks               UserDefinedTrack[]
+}
+
+model Compilation {
+  id                Int                @id @default(autoincrement())
+  name              String
+  description       String
+  thumbnailURL      String?
+  youtubeURL        String?
+  nintendoMusicURL  String?
+  creator           User               @relation(fields: [creatorId], references: [id])
+  creatorId         Int
+  compilationTracks CompilationTrack[]
+}
+
+model CompilationTrack {
+  id                 Int              @id @default(autoincrement())
+  compilation        Compilation      @relation(fields: [compilationId], references: [id])
+  compilationId      Int
+  position           Int
+  addedToNMLPlaylist Boolean
+  userDefinedTrack   UserDefinedTrack @relation(fields: [userDefinedTrackId], references: [id])
+  userDefinedTrackId Int
+}
+
+model UserDefinedAlbum {
+  id     Int                @id @default(autoincrement())
+  name   String
+  tracks UserDefinedTrack[]
+}
+
+model UserDefinedTrack {
+  id                          Int                        @id @default(autoincrement())
+  title                       String
+  duration                    Int
+  userDefinedAlbum            UserDefinedAlbum           @relation(fields: [userDefinedAlbumId], references: [id])
+  userDefinedAlbumId          Int
+  nintendoMusicLibraryTrack   NintendoMusicLibraryTrack? @relation(fields: [nintendoMusicLibraryTrackId], references: [id])
+  nintendoMusicLibraryTrackId Int?
+  compilationTracks           CompilationTrack[]
+}
