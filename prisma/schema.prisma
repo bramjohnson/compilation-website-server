@@ -23,6 +23,22 @@ model User {
   compilations Compilation[]
 }
 
+model SpotifyGameAlbum {
+  id             Int                @id @default(autoincrement())
+  name           String
+  spotifyAlbumId Int
+  tracks         SpotifyGameTrack[]
+}
+
+model SpotifyGameTrack {
+  id                 Int                @id @default(autoincrement())
+  title              String
+  duration           Int
+  userDefinedTracks  UserDefinedTrack[]
+  spotifyGameAlbum   SpotifyGameAlbum?  @relation(fields: [spotifyGameAlbumId], references: [id])
+  spotifyGameAlbumId Int?
+}
+
 model NintendoMusicLibraryGameAlbum {
   id     Int                         @id @default(autoincrement())
   name   String
@@ -75,4 +91,6 @@ model UserDefinedTrack {
   nintendoMusicLibraryTrack   NintendoMusicLibraryTrack? @relation(fields: [nintendoMusicLibraryTrackId], references: [id])
   nintendoMusicLibraryTrackId Int?
   compilationTracks           CompilationTrack[]
+  spotifyGameTrack            SpotifyGameTrack?          @relation(fields: [spotifyGameTrackId], references: [id])
+  spotifyGameTrackId          Int?
 }
