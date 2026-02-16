@@ -1,0 +1,202 @@
+openapi: 3.0.4
+info:
+  title: Nintendo Music Compilations v1
+  version: 0.0.1
+
+servers:
+  - url: "http://localhost:3000/api/v1"
+
+paths:
+  /creator/{id}:
+    get:
+      summary: Gets a creator by ID.
+      operationId: getCreatorByID
+      parameters:
+        - name: id
+          in: path
+          description: Compilation ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Successful query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Creator"
+
+  /compilation/:
+    get:
+      summary: Lists all compilations
+      operationId: listCompilations
+      responses:
+        "200":
+          description: Successful listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Compilations"
+  /compilation/{id}:
+    get:
+      summary: Gets a compilation by ID.
+      operationId: getCompilationByID
+      parameters:
+        - name: id
+          in: path
+          description: Compilation ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Successfuly query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Compilation"
+  /userDefined/album:
+    get:
+      operationId: filterUserDefinedAlbums
+      parameters:
+        - name: name
+          in: query
+          description: The name of the album
+          required: false
+          schema:
+            type: string
+          example: "Animal Crossing: Wild World - K.K.'s Choice Mix!"
+      responses:
+        "200":
+          description: Successful listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDefinedAlbums"
+  /userDefined/track:
+    post:
+      operationId: createUserDefinedTrack
+      parameters:
+        - name: userDefinedAlbumId
+          in: query
+          schema:
+            type: integer
+        - name: title
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful track creation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDefinedTrack"
+    get:
+      operationId: filterUserDefinedTracks
+      parameters:
+        - name: userDefinedAlbumId
+          in: query
+          description: The ID of the parent album
+          required: false
+          schema:
+            type: integer
+          example: 1
+        - name: title
+          in: query
+          description: The title of the track
+          required: false
+          schema:
+            type: string
+          example: "Title (First Snow Mix)"
+      responses:
+        "200":
+          description: Successful listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDefinedTracks"
+
+components:
+  schemas:
+    Creator:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        avatarURL:
+          type: string
+    Compilations:
+      type: array
+      items:
+        $ref: "#/components/schemas/Compilation"
+    Compilation:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        thumbnailURL:
+          type: string
+        youtubeURL:
+          type: string
+        nintendoMusicURL:
+          type: string
+        creatorId:
+          type: integer
+        creator:
+          $ref: "#/components/schemas/Creator"
+        compilationTracks:
+          $ref: "#/components/schemas/CompilationTracks"
+    CompilationTracks:
+      type: array
+      items:
+        $ref: "#/components/schemas/CompilationTrack"
+    CompilationTrack:
+      type: object
+      properties:
+        id:
+          type: integer
+        addedToNMLPlaylist:
+          type: boolean
+        userDefinedTrack:
+          $ref: "#/components/schemas/UserDefinedTrack"
+    UserDefinedAlbums:
+      type: array
+      items:
+        $ref: "#/components/schemas/UserDefinedAlbum"
+    UserDefinedAlbum:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    UserDefinedTracks:
+      type: array
+      items:
+        $ref: "#/components/schemas/UserDefinedTrack"
+    UserDefinedTrack:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        duration:
+          type: number
+        userDefinedAlbumId:
+          type: number
+        userDefinedAlbum:
+          $ref: "#/components/schemas/UserDefinedAlbum"
+        nintendoMusicLibrary:
+          type: integer
+        spotifyGameTrackId:
+          type: integer
