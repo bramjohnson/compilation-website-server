@@ -48,6 +48,11 @@ function appWithContext(prismaClient: PrismaClient) {
     res.json(creator);
   });
 
+  app.get('/compilation', async (req, res) => {
+    const compilations = await prismaClient.compilation.findMany()
+    res.json(compilations)
+  })
+
   app.get("/compilation/:id", async (req, res) => {
     const compilationIDString = req.params.id;
     const compilationID = parseInt(compilationIDString);
