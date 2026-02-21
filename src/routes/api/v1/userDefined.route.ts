@@ -37,6 +37,29 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
         res.json(userDefinedAlbums);
     });
 
+    const UserDefinedAlbumCreationSchema = z.object({
+        name: z.string(),
+    });
+
+    userDefinedRouter.post("/album", async (req, res) => {
+        const parseResult = UserDefinedAlbumCreationSchema.safeParse(req.query);
+        if (!parseResult.success) {
+            return res.status(400).json({
+                error: "Invalid query parameters",
+                details: parseResult.error,
+            });
+        }
+
+        const query = parseResult.data;
+        const { name } = query;
+
+        const userDefinedAlbums = await prismaClient.userDefinedAlbum.create({
+            data: { name }
+        });
+
+        res.json(userDefinedAlbums);
+    })
+
     const UserDefinedTrackQuerySchema = z.object({
         userDefinedAlbumId: z
             .string()
@@ -64,14 +87,17 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
             mode: "insensitive",
         });
 
-        const userDefinedAlbums = await prismaClient.userDefinedTrack.findMany({
+        const userDefinedTracks = await prismaClient.userDefinedTrack.findMany({
             where: {
                 title: titleQuery,
                 userDefinedAlbumId: userDefinedAlbumId,
             },
+            include: {
+                userDefinedAlbum: true
+            }
         });
 
-        res.json(userDefinedAlbums);
+        res.json(userDefinedTracks);
     });
 
     const UserDefinedTrackCreationSchema = z.object({
@@ -94,17 +120,20 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
         const query = parseResult.data;
         const { title, userDefinedAlbumId } = query;
 
-        const userDefinedAlbums = await prismaClient.userDefinedTrack.create({
+        const userDefinedTrack = await prismaClient.userDefinedTrack.create({
             data: {
                 title,
                 duration: 0,
                 userDefinedAlbum: {
                     connect: { id: userDefinedAlbumId }
                 }
+            },
+            include: {
+                userDefinedAlbum: true
             }
         });
 
-        res.json(userDefinedAlbums);
+        res.json(userDefinedTrack);
     })
 
     return userDefinedRouter

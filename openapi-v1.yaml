@@ -75,6 +75,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserDefinedAlbums"
+    post:
+      operationId: createUserDefinedAlbum
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful album creation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDefinedAlbum"
   /userDefined/track:
     post:
       operationId: createUserDefinedTrack
@@ -111,6 +125,31 @@ paths:
           schema:
             type: string
           example: "Title (First Snow Mix)"
+      responses:
+        "200":
+          description: Successful listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDefinedTracks"
+  /creator:
+    get:
+      operationId: filterCreators
+      parameters:
+        - name: creatorId
+          in: query
+          description: The ID of the creator
+          required: false
+          schema:
+            type: integer
+          example: 1
+        - name: name
+          in: query
+          description: The name of the creator
+          required: false
+          schema:
+            type: string
+          example: "Ezonater"
       responses:
         "200":
           description: Successful listing
