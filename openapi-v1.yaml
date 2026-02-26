@@ -28,6 +28,36 @@ paths:
                 $ref: "#/components/schemas/Creator"
 
   /compilation/:
+    post:
+      summary: Creates a compilation
+      operationId: createCompilation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                creatorID:
+                  type: integer
+                userDefinedTrackIDs:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      position:
+                        type: integer
+      responses:
+        "200":
+          description: Successful creation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Compilations"
     get:
       summary: Lists all compilations
       operationId: listCompilations
@@ -50,6 +80,54 @@ paths:
           schema:
             type: integer
             format: int64
+      responses:
+        "200":
+          description: Successfuly query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Compilation"
+    patch:
+      summary: Updates a compilation by ID.
+      operationId: patchCompilationByID
+      parameters:
+        - name: id
+          in: path
+          description: Compilation ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: title
+          in: body
+          schema:
+            type: string
+        - name: creatorID
+          in: body
+          schema:
+            type: integer
+        - name: userDefinedTracks
+          in: body
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: integer
+                position:
+                  type: integer
+        - name: compilationTracks
+          in: body
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: integer
+                position:
+                  type: integer
       responses:
         "200":
           description: Successfuly query
@@ -89,6 +167,47 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserDefinedAlbum"
+  /userDefined/album/{id}/track:
+    get:
+      operationId: filterUserDefinedTracksByAlbumID
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: integer
+        - name: title
+          in: query
+          description: The title of the track
+          required: false
+          schema:
+            type: string
+          example: "Overture"
+      responses:
+        "200":
+          description: Successful listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDefinedTracks"
+  /userDefined/track/{id}:
+    patch:
+      operationId: updateUserDefinedTrack
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: integer
+        - name: nintendoMusicTrackId
+          in: body
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful track update
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDefinedTrack"
   /userDefined/track:
     post:
       operationId: createUserDefinedTrack
@@ -111,13 +230,6 @@ paths:
     get:
       operationId: filterUserDefinedTracks
       parameters:
-        - name: userDefinedAlbumId
-          in: query
-          description: The ID of the parent album
-          required: false
-          schema:
-            type: integer
-          example: 1
         - name: title
           in: query
           description: The title of the track
@@ -133,6 +245,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserDefinedTracks"
   /creator:
+    post:
+      operationId: createCreator
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful creator creation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Creator"
     get:
       operationId: filterCreators
       parameters:
@@ -157,6 +283,119 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserDefinedTracks"
+  /nintendoMusic/album:
+    get:
+      operationId: filterNintendoMusicAlbums
+      parameters:
+        - name: name
+          in: query
+          description: The name of the album
+          required: false
+          schema:
+            type: string
+          example: "Super Mario Odyssey"
+      responses:
+        "200":
+          description: Successful listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NintendoMusicAlbums"
+    post:
+      operationId: createNintendoMusicAlbum
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful album creation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NintendoMusicAlbum"
+  /nintendoMusic/album/{id}:
+    get:
+      summary: Gets a nintendo album by ID.
+      operationId: getNintendoMusicAlbumByID
+      parameters:
+        - name: id
+          in: path
+          description: album ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Successfuly query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NintendoMusicAlbumWithTracks"
+  /nintendoMusic/album/{id}/track:
+    get:
+      summary: Lists nintendo music tracks by album ID.
+      operationId: filterNintendoMusicTracksByAlbumID
+      parameters:
+        - name: id
+          in: path
+          description: album ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: title
+          in: query
+          description: The title of the track
+          required: false
+          schema:
+            type: string
+          example: "Title Screen"
+      responses:
+        "200":
+          description: Successfuly query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NintendoMusicTracks"
+  /nintendoMusic/track:
+    get:
+      operationId: filterNintendoMusicTracks
+      parameters:
+        - name: title
+          in: query
+          description: The title of the track
+          required: false
+          schema:
+            type: string
+          example: "Title Screen"
+      responses:
+        "200":
+          description: Successful listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NintendoMusicTracksWithAlbum"
+    post:
+      operationId: createNintendoMusicTrack
+      parameters:
+        - name: nintendoMusicAlbumId
+          in: query
+          schema:
+            type: integer
+        - name: title
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful track creation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NintendoMusicTrack"
 
 components:
   schemas:
@@ -235,7 +474,51 @@ components:
           type: number
         userDefinedAlbum:
           $ref: "#/components/schemas/UserDefinedAlbum"
-        nintendoMusicLibrary:
+        nintendoMusicLibraryTrackId:
           type: integer
         spotifyGameTrackId:
           type: integer
+    NintendoMusicAlbum:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    NintendoMusicAlbums:
+      type: array
+      items:
+        $ref: "#/components/schemas/NintendoMusicAlbum"
+    NintendoMusicAlbumWithTracks:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        tracks:
+          $ref: "#/components/schemas/NintendoMusicTracks"
+    NintendoMusicTrack:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+    NintendoMusicTracks:
+      type: array
+      items:
+        $ref: "#/components/schemas/NintendoMusicTrack"
+    NintendoMusicTrackWithAlbum:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        nintendoMusicLibraryGameAlbum:
+          $ref: "#/components/schemas/NintendoMusicAlbum"
+    NintendoMusicTracksWithAlbum:
+      type: array
+      items:
+        $ref: "#/components/schemas/NintendoMusicTrackWithAlbum"
