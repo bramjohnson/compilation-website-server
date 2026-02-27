@@ -55,15 +55,21 @@ model NintendoMusicLibraryTrack {
 }
 
 model Compilation {
-  id                Int                @id @default(autoincrement())
+  id                Int                   @id @default(autoincrement())
   name              String
   description       String
   thumbnailURL      String?
   youtubeURL        String?
   nintendoMusicURL  String?
-  creator           User               @relation(fields: [creatorId], references: [id])
+  creator           User                  @relation(fields: [creatorId], references: [id])
   creatorId         Int
   compilationTracks CompilationTrack[]
+  visibility        CompilationVisibility @default(PRIVATE)
+}
+
+enum CompilationVisibility {
+  PRIVATE
+  PUBLIC
 }
 
 model CompilationTrack {

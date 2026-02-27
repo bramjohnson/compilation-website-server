@@ -60,7 +60,7 @@ paths:
                 $ref: "#/components/schemas/Compilations"
     get:
       summary: Lists all compilations
-      operationId: listCompilations
+      operationId: filterCompilations
       responses:
         "200":
           description: Successful listing
@@ -431,6 +431,9 @@ components:
           type: integer
         creator:
           $ref: "#/components/schemas/Creator"
+        visibility:
+          type: string
+          enum: [PRIVATE, PUBLIC]
         compilationTracks:
           $ref: "#/components/schemas/CompilationTracks"
     CompilationTracks:
