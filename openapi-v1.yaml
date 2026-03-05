@@ -403,7 +403,7 @@ components:
       properties:
         id:
           type: integer
-        name:
+        username:
           type: string
         avatarURL:
           type: string
