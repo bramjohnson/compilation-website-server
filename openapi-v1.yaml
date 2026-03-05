@@ -57,7 +57,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Compilations"
+                $ref: "#/components/schemas/Compilation"
     get:
       summary: Lists all compilations
       operationId: filterCompilations
@@ -87,9 +87,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Compilation"
-    patch:
+    put:
       summary: Updates a compilation by ID.
-      operationId: patchCompilationByID
+      operationId: putCompilationByID
       parameters:
         - name: id
           in: path
@@ -98,36 +98,35 @@ paths:
           schema:
             type: integer
             format: int64
-        - name: title
-          in: body
-          schema:
-            type: string
-        - name: creatorID
-          in: body
-          schema:
-            type: integer
-        - name: userDefinedTracks
-          in: body
-          schema:
-            type: array
-            items:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
               type: object
               properties:
-                id:
+                title:
+                  type: string
+                creatorID:
                   type: integer
-                position:
-                  type: integer
-        - name: compilationTracks
-          in: body
-          schema:
-            type: array
-            items:
-              type: object
-              properties:
-                id:
-                  type: integer
-                position:
-                  type: integer
+                userDefinedTracks:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      position:
+                        type: integer
+                compilationTracks:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      position:
+                        type: integer
       responses:
         "200":
           description: Successfuly query
@@ -444,6 +443,8 @@ components:
       type: object
       properties:
         id:
+          type: integer
+        position:
           type: integer
         addedToNMLPlaylist:
           type: boolean

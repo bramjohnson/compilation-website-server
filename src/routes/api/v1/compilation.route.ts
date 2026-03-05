@@ -29,6 +29,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
           compilationTracks: {
             select: {
               id: true,
+              position: true,
               addedToNMLPlaylist: true,
               userDefinedTrack: {
                 select: {
@@ -70,9 +71,9 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     ),
   });
 
-  compilationRouter.patch("/:id", async (req, res) => {
+  compilationRouter.put("/:id", async (req, res) => {
     const parseParamsResult = CompilationCreationParamsSchema.safeParse(
-      req.body,
+      req.params,
     );
     if (!parseParamsResult.success) {
       return res.status(400).json({
@@ -124,6 +125,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
           compilationTracks: {
             select: {
               id: true,
+              position: true,
               addedToNMLPlaylist: true,
               userDefinedTrack: {
                 select: {
