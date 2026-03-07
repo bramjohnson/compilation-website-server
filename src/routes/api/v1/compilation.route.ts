@@ -1,9 +1,18 @@
-import { PrismaClient } from "../../../generated/prisma/client";
+import { PrismaClient, User } from "../../../generated/prisma/client";
 import { Router } from "express";
 import z from "zod";
+import { authenticateMiddlewareClosure, RequestWithResolvableUser } from "./users.route";
 
 export function setupCompilationRouter(prismaClient: PrismaClient): Router {
   const compilationRouter = Router();
+
+  compilationRouter.get('/:id/editable', authenticateMiddlewareClosure(prismaClient), (req: RequestWithResolvableUser, res) => {
+    if (req.user !== undefined) {
+      return res.status(200).json({ message: "Yes you can edit this!" })
+    } else {
+      return res.status(403).json({ error: "No access" })
+    }
+  })
 
   compilationRouter.get("/", async (req, res) => {
     try {
@@ -71,7 +80,8 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     ),
   });
 
-  compilationRouter.put("/:id", async (req, res) => {
+
+  compilationRouter.put("/:id", authenticateMiddlewareClosure(prismaClient), async (req, res) => {
     const parseParamsResult = CompilationCreationParamsSchema.safeParse(
       req.params,
     );
@@ -157,7 +167,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     title: z.string(),
   });
 
-  compilationRouter.post("/", async (req, res) => {
+  compilationRouter.post("/", authenticateMiddlewareClosure(prismaClient), async (req, res) => {
     console.info(req.body);
     const parseResult = CompilationIDBodySchema.safeParse(req.body);
     if (!parseResult.success) {
