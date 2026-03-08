@@ -2,7 +2,6 @@ import { NextFunction, Request, Response, Router } from "express";
 import { PrismaClient, User } from "../../../generated/prisma/client";
 import { jwtVerify, SignJWT } from "jose";
 import bcrypt from 'bcrypt';
-import { hash } from "zod";
 
 const SALT_ROUNDS = 12;
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
@@ -85,6 +84,11 @@ export function setupUserRouter(prismaClient: PrismaClient): Router {
                 .setExpirationTime("8h")
                 .sign(JWT_SECRET)
 
+            res.cookie('token', token, {
+                // httpOnly: true,
+                // secure: true,
+                // sameSite: "strict",
+            })
             return res.json({ token })
         } catch (err) {
             console.error(err);

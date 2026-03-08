@@ -4,6 +4,7 @@ import { setupCompilationRouter } from "./compilation.route";
 import { setupCreatorRouter } from "./creator.route";
 import { setupUserDefinedRouter } from "./userDefined.route";
 import { setupNintendoMusicRouter } from "./nintendoMusic.route";
+import { setupUserRouter } from "./users.route";
 
 export function setupV1Router(prismaClient: PrismaClient): Router {
   const v1Router = Router();
@@ -22,5 +23,6 @@ export function setupV1Router(prismaClient: PrismaClient): Router {
   v1Router.use("/creator", setupCreatorRouter(prismaClient));
   v1Router.use("/userDefined", setupUserDefinedRouter(prismaClient));
   v1Router.use("/nintendoMusic", setupNintendoMusicRouter(prismaClient));
+  v1Router.use("/user", setupUserRouter(prismaClient));
   return v1Router;
 }

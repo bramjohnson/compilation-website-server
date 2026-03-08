@@ -395,6 +395,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NintendoMusicTrack"
+  /user/login:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Successful login
 
 components:
   schemas:
