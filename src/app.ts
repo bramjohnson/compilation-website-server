@@ -1,24 +1,30 @@
 import express from "express";
 import { createPrismaClient } from "./prisma";
 import { setupAPIRouter } from "./routes/api/api.route";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 
 function setup() {
   const app = express();
   const prismaClient = createPrismaClient();
 
-  // Setup Wildcard CORS
+  // Setup extra methods
   app.use((_, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Origin, X-Requested-With, Content-Type, Accept",
-    );
     res.header("Access-Control-Allow-Methods", "PUT, PATCH, DELETE");
     next();
   });
 
+  // Setup CORS
+  app.use(
+    cors({
+      origin: "http://localhost:5173",
+      credentials: true,
+    }),
+  );
+
   // Setup API routes
   app.use(express.json());
+  app.use(cookieParser());
   app.use("/api", setupAPIRouter(prismaClient));
 
   const port = 3000;

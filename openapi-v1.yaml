@@ -3,9 +3,6 @@ info:
   title: Nintendo Music Compilations v1
   version: 0.0.1
 
-servers:
-  - url: "http://localhost:3000/api/v1"
-
 paths:
   /creator/{id}:
     get:
@@ -408,6 +405,11 @@ paths:
                   type: string
                 password:
                   type: string
+      responses:
+        "200":
+          description: Successful login
+  /user/authenticated:
+    get:
       responses:
         "200":
           description: Successful login
