@@ -50,11 +50,16 @@ export function setupCreatorRouter(prismaClient: PrismaClient): Router {
 
     const users = await prismaClient.user.findMany({
       where: {
-        name: {
+        username: {
           contains: name,
           mode: "insensitive",
         },
         creatorId: creatorId,
+      },
+      select: {
+        id: true,
+        username: true,
+        password: false,
       },
     });
 
@@ -62,7 +67,7 @@ export function setupCreatorRouter(prismaClient: PrismaClient): Router {
   });
 
   const CreatorCreateQuerySchema = z.object({
-    name: z.string().optional(),
+    name: z.string(),
   });
 
   creatorRouter.post("/", async (req, res) => {
@@ -79,8 +84,7 @@ export function setupCreatorRouter(prismaClient: PrismaClient): Router {
 
     const users = await prismaClient.user.create({
       data: {
-        name: name,
-        email: "",
+        username: name,
       },
     });
 

@@ -1,18 +1,29 @@
-import { PrismaClient, User } from "../../../generated/prisma/client";
+import {
+  Permission,
+  PrismaClient,
+  User,
+} from "../../../generated/prisma/client";
 import { Router } from "express";
 import z from "zod";
-import { authenticateMiddlewareClosure, RequestWithResolvableUser } from "./users.route";
+import {
+  authenticateMiddlewareClosure,
+  RequestWithResolvableUser,
+} from "./users.route";
 
 export function setupCompilationRouter(prismaClient: PrismaClient): Router {
   const compilationRouter = Router();
 
-  compilationRouter.get('/:id/editable', authenticateMiddlewareClosure(prismaClient), (req: RequestWithResolvableUser, res) => {
-    if (req.user !== undefined) {
-      return res.status(200).json({ message: "Yes you can edit this!" })
-    } else {
-      return res.status(403).json({ error: "No access" })
-    }
-  })
+  compilationRouter.get(
+    "/:id/editable",
+    authenticateMiddlewareClosure(prismaClient),
+    (req: RequestWithResolvableUser, res) => {
+      if (req.user !== undefined) {
+        return res.status(200).json({ message: "Yes you can edit this!" });
+      } else {
+        return res.status(403).json({ error: "No access" });
+      }
+    },
+  );
 
   compilationRouter.get("/", async (req, res) => {
     try {
@@ -34,7 +45,12 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
           id: compilationID,
         },
         include: {
-          creator: true,
+          creator: {
+            select: {
+              id: true,
+              username: true,
+            },
+          },
           compilationTracks: {
             select: {
               id: true,
@@ -46,6 +62,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
                   title: true,
                   duration: true,
                   userDefinedAlbum: true,
+                  nintendoMusicLibraryTrackId: true,
                 },
               },
             },
@@ -80,81 +97,94 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     ),
   });
 
+  compilationRouter.put(
+    "/:id",
+    authenticateMiddlewareClosure(prismaClient),
+    async (req: RequestWithResolvableUser, res) => {
+      const parseParamsResult = CompilationCreationParamsSchema.safeParse(
+        req.params,
+      );
+      if (!parseParamsResult.success) {
+        return res.status(400).json({
+          error: "Invalid query parameters",
+          details: parseParamsResult.error,
+        });
+      }
 
-  compilationRouter.put("/:id", authenticateMiddlewareClosure(prismaClient), async (req, res) => {
-    const parseParamsResult = CompilationCreationParamsSchema.safeParse(
-      req.params,
-    );
-    if (!parseParamsResult.success) {
-      return res.status(400).json({
-        error: "Invalid query parameters",
-        details: parseParamsResult.error,
-      });
-    }
+      const params = parseParamsResult.data;
+      const { id } = params;
 
-    const params = parseParamsResult.data;
-    const { id } = params;
+      const parseBodyResult = CompilationCreationBodySchema.safeParse(req.body);
+      if (!parseBodyResult.success) {
+        return res.status(400).json({
+          error: "Invalid query parameters",
+          details: parseBodyResult.error,
+        });
+      }
 
-    const parseBodyResult = CompilationCreationBodySchema.safeParse(req.body);
-    if (!parseBodyResult.success) {
-      return res.status(400).json({
-        error: "Invalid query parameters",
-        details: parseBodyResult.error,
-      });
-    }
+      const body = parseBodyResult.data;
+      const { title, creatorID, userDefinedTracks, compilationTracks } = body;
 
-    const body = parseBodyResult.data;
-    const { title, creatorID, userDefinedTracks, compilationTracks } = body;
+      // Return early if the user is requesting to impersonate another user and does not have the sufficient permissions
+      if (
+        req.user &&
+        creatorID !== req.user.id &&
+        !req.user.permissionsReceived
+          .map((p) => p.permission)
+          .includes(Permission.IMPERSONATE_CREATE_COMPILATION)
+      ) {
+      }
 
-    try {
-      const compilation = await prismaClient.compilation.update({
-        where: {
-          id: id,
-        },
-        data: {
-          name: title,
-          creator: {
-            connect: { id: creatorID },
+      try {
+        const compilation = await prismaClient.compilation.update({
+          where: {
+            id: id,
           },
-          compilationTracks: {
-            updateMany: compilationTracks.map((track, idx) => ({
-              where: { id: track.id },
-              data: { position: track.position },
-            })),
-            createMany: {
-              data: userDefinedTracks.map((track, idx) => ({
-                userDefinedTrackId: track.id,
-                position: track.position,
-                addedToNMLPlaylist: false,
+          data: {
+            name: title,
+            creator: {
+              connect: { id: creatorID },
+            },
+            compilationTracks: {
+              updateMany: compilationTracks.map((track, idx) => ({
+                where: { id: track.id },
+                data: { position: track.position },
               })),
+              createMany: {
+                data: userDefinedTracks.map((track, idx) => ({
+                  userDefinedTrackId: track.id,
+                  position: track.position,
+                  addedToNMLPlaylist: false,
+                })),
+              },
             },
           },
-        },
-        include: {
-          creator: true,
-          compilationTracks: {
-            select: {
-              id: true,
-              position: true,
-              addedToNMLPlaylist: true,
-              userDefinedTrack: {
-                select: {
-                  id: true,
-                  title: true,
-                  duration: true,
-                  userDefinedAlbum: true,
+          include: {
+            creator: true,
+            compilationTracks: {
+              select: {
+                id: true,
+                position: true,
+                addedToNMLPlaylist: true,
+                userDefinedTrack: {
+                  select: {
+                    id: true,
+                    title: true,
+                    duration: true,
+                    userDefinedAlbum: true,
+                  },
                 },
               },
             },
           },
-        },
-      });
-      res.json(compilation);
-    } catch (e) {
-      console.error(e);
-      res.status(500);
-    }
-  });
+        });
+        res.json(compilation);
+      } catch (e) {
+        console.error(e);
+        res.status(500);
+      }
+    },
+  );
 
   const CompilationIDBodySchema = z.object({
     creatorID: z.number().int().positive(),
@@ -167,61 +197,65 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     title: z.string(),
   });
 
-  compilationRouter.post("/", authenticateMiddlewareClosure(prismaClient), async (req, res) => {
-    console.info(req.body);
-    const parseResult = CompilationIDBodySchema.safeParse(req.body);
-    if (!parseResult.success) {
-      return res.status(400).json({
-        error: "Invalid query parameters",
-        details: parseResult.error,
-      });
-    }
+  compilationRouter.post(
+    "/",
+    authenticateMiddlewareClosure(prismaClient),
+    async (req: RequestWithResolvableUser, res) => {
+      console.info(req.body);
+      const parseResult = CompilationIDBodySchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({
+          error: "Invalid query parameters",
+          details: parseResult.error,
+        });
+      }
 
-    const body = parseResult.data;
-    const { title, userDefinedTrackIDs, creatorID } = body;
+      const body = parseResult.data;
+      const { title, userDefinedTrackIDs, creatorID } = body;
 
-    try {
-      const compilation = await prismaClient.compilation.create({
-        data: {
-          name: title,
-          description: "",
-          creator: {
-            connect: { id: creatorID },
+      try {
+        const compilation = await prismaClient.compilation.create({
+          data: {
+            name: title,
+            description: "",
+            creator: {
+              connect: { id: creatorID },
+            },
+            compilationTracks: {
+              create: userDefinedTrackIDs.map((track) => ({
+                position: track.position,
+                userDefinedTrack: {
+                  connect: { id: track.id },
+                },
+                addedToNMLPlaylist: false,
+              })),
+            },
           },
-          compilationTracks: {
-            create: userDefinedTrackIDs.map((track) => ({
-              position: track.position,
-              userDefinedTrack: {
-                connect: { id: track.id },
-              },
-              addedToNMLPlaylist: false,
-            })),
-          },
-        },
-        include: {
-          creator: true,
-          compilationTracks: {
-            select: {
-              id: true,
-              addedToNMLPlaylist: true,
-              userDefinedTrack: {
-                select: {
-                  id: true,
-                  title: true,
-                  duration: true,
-                  userDefinedAlbum: true,
+          include: {
+            creator: true,
+            compilationTracks: {
+              select: {
+                id: true,
+                addedToNMLPlaylist: true,
+                userDefinedTrack: {
+                  select: {
+                    id: true,
+                    title: true,
+                    duration: true,
+                    userDefinedAlbum: true,
+                  },
                 },
               },
             },
           },
-        },
-      });
-      res.json(compilation);
-    } catch (e) {
-      console.error(e);
-      res.status(500);
-    }
-  });
+        });
+        res.json(compilation);
+      } catch (e) {
+        console.error(e);
+        res.status(500);
+      }
+    },
+  );
 
   return compilationRouter;
 }

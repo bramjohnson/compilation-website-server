@@ -1,13 +1,19 @@
 import { NextFunction, Request, Response, Router } from "express";
-import { PrismaClient, User } from "../../../generated/prisma/client";
+import {
+  PrismaClient,
+  User,
+  UserPermission,
+} from "../../../generated/prisma/client";
 import { jwtVerify, SignJWT } from "jose";
 import bcrypt from "bcrypt";
 
 const SALT_ROUNDS = 12;
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
+export interface UserWithPermissions extends User {}
+
 export interface RequestWithResolvableUser extends Request {
-  user?: User;
+  user?: User & { permissionsReceived: UserPermission[] };
 }
 
 export function authenticateMiddlewareClosure(prismaClient: PrismaClient) {
@@ -32,6 +38,9 @@ export function authenticateMiddlewareClosure(prismaClient: PrismaClient) {
       const userID: number = parseInt(payload.sub);
       const user = await prismaClient.user.findUnique({
         where: { id: userID },
+        include: {
+          permissionsReceived: true,
+        },
       });
       if (user === null) {
         return res.status(404).json({ error: "User not found" });

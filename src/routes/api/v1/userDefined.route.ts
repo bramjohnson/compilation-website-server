@@ -151,19 +151,15 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
   });
 
   const UserDefinedTrackParamsSchema = z.object({
-    id: z.string().transform(Number).pipe(z.number().int()).optional(),
+    id: z.string().transform(Number).pipe(z.number().int()),
   });
 
   const UserDefinedTrackPatchSchema = z.object({
-    nintendoMusicTrackId: z
-      .string()
-      .transform(Number)
-      .pipe(z.number().int())
-      .optional(),
+    nintendoMusicTrackId: z.int().optional(),
   });
 
   userDefinedRouter.patch("/track/:id", async (req, res) => {
-    const parseResult = UserDefinedTrackParamsSchema.safeParse(req.query);
+    const parseResult = UserDefinedTrackParamsSchema.safeParse(req.params);
     if (!parseResult.success) {
       return res.status(400).json({
         error: "Invalid query parameters",
@@ -185,20 +181,27 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
     const query2 = parseResult2.data;
     const { nintendoMusicTrackId } = query2;
 
-    const userDefinedTrack = await prismaClient.userDefinedTrack.update({
-      where: {
-        id: id,
-      },
-      data: {
-        nintendoMusicLibraryTrack: {
-          connect: {
-            id: nintendoMusicTrackId,
+    try {
+      const userDefinedTrack = await prismaClient.userDefinedTrack.update({
+        where: {
+          id: id,
+        },
+        data: {
+          nintendoMusicLibraryTrack: {
+            connect: {
+              id: nintendoMusicTrackId,
+            },
           },
         },
-      },
-    });
+      });
 
-    res.json(userDefinedTrack);
+      return res.json(userDefinedTrack);
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ error: "Could not PATCH the userDefinedTrack" });
+    }
   });
 
   return userDefinedRouter;

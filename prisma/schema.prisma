@@ -14,14 +14,36 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  username     String        @unique
-  password     String
-  displayName  String?
-  avatarURL    String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  compilations Compilation[]
+  id                  Int              @id @default(autoincrement())
+  username            String           @unique
+  password            String
+  displayName         String?
+  avatarURL           String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  compilations        Compilation[]
+  permissionsGranted  UserPermission[] @relation("PermissionsGranted")
+  permissionsReceived UserPermission[] @relation("PermissionsReceived")
+}
+
+model UserPermission {
+  id         Int        @id @default(autoincrement())
+  permission Permission
+
+  grantorId Int
+  grantor   User @relation("PermissionsGranted", fields: [grantorId], references: [id])
+  granteeId Int
+  grantee   User @relation("PermissionsReceived", fields: [granteeId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([grantorId, granteeId, permission])
+}
+
+enum Permission {
+  IMPERSONATE_CREATE_COMPILATION
+  IMPERSONATE_EDIT_COMPILATION
+  IMPERSONATE_DELETE_COMPILATION
 }
 
 model SpotifyGameAlbum {
