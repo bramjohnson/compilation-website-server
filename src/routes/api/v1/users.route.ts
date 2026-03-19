@@ -10,7 +10,7 @@ import bcrypt from "bcrypt";
 const SALT_ROUNDS = 12;
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
-export interface UserWithPermissions extends User {}
+export interface UserWithPermissions extends User { }
 
 export interface RequestWithResolvableUser extends Request {
   user?: User & { permissionsReceived: UserPermission[] };
@@ -114,6 +114,14 @@ export function setupUserRouter(prismaClient: PrismaClient): Router {
       return res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  userRouter.get("/session", authenticateMiddlewareClosure(prismaClient), async (req: RequestWithResolvableUser, res) => {
+    if (req.user === undefined) {
+      return res.status(403).json({ error: "Not authenticated" });
+    } else {
+      return res.status(200).json(req.user);
+    }
+  })
 
   userRouter.get(
     "/authenticated",

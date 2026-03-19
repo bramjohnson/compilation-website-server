@@ -1,13 +1,32 @@
 import { PrismaClient } from "../../../generated/prisma/client";
 import { Router } from "express";
 import z from "zod";
-import { optionalStringQuery } from "../../../util/prisma.util";
+import { authenticateMiddlewareClosure, RequestWithResolvableUser } from "./users.route";
 
 export function setupCreatorRouter(prismaClient: PrismaClient): Router {
   const creatorRouter = Router();
+
+  creatorRouter.get("/compilation", authenticateMiddlewareClosure(prismaClient), async (req: RequestWithResolvableUser, res) => {
+    const authenticatedUser = req.user!;
+    try {
+      const compilations = await prismaClient.compilation.findMany({
+        where: {
+          creatorId: authenticatedUser.id
+        },
+      })
+      res.json(compilations)
+    } catch {
+      res.status(400).json({ error: "Could not get compilations" })
+    }
+  })
+
   creatorRouter.get("/:id", async (req, res) => {
     const creatorIDString = req.params.id;
     const creatorID = parseInt(creatorIDString);
+    if (Number.isNaN(creatorID)) {
+      res.status(403).json({ error: "Could not parse creator ID" })
+      return
+    }
 
     try {
       const creator = await prismaClient.user.findUnique({

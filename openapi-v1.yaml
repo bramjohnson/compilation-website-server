@@ -22,7 +22,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Creator"
+                $ref: "#/components/schemas/User"
 
   /compilation/:
     post:
@@ -261,7 +261,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Creator"
+                $ref: "#/components/schemas/User"
     get:
       operationId: filterCreators
       parameters:
@@ -286,6 +286,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserDefinedTracks"
+  /creator/compilation:
+    get:
+      operationId: getCompilationForAuthenticatedUser
+      responses:
+        "200":
+          description: Successful listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Compilations"
   /nintendoMusic/album:
     get:
       operationId: filterNintendoMusicAlbums
@@ -420,10 +430,20 @@ paths:
       responses:
         "200":
           description: Successful login
+  /user/session:
+    get:
+      operationId: getUserSession
+      responses:
+        "200":
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
 
 components:
   schemas:
-    Creator:
+    User:
       type: object
       properties:
         id:
@@ -454,7 +474,7 @@ components:
         creatorId:
           type: integer
         creator:
-          $ref: "#/components/schemas/Creator"
+          $ref: "#/components/schemas/User"
         visibility:
           type: string
           enum: [PRIVATE, PUBLIC]
