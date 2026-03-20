@@ -1,4 +1,5 @@
 import {
+  CompilationVisibility,
   Permission,
   PrismaClient,
   User,
@@ -81,8 +82,9 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
   });
 
   const CompilationCreationBodySchema = z.object({
-    title: z.string(),
+    title: z.string().nonempty(),
     creatorID: z.number().int().positive(),
+    visibility: z.string(),
     userDefinedTracks: z.array(
       z.object({
         id: z.number().int().positive(),
@@ -123,7 +125,13 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
       }
 
       const body = parseBodyResult.data;
-      const { title, creatorID, userDefinedTracks, compilationTracks } = body;
+      const {
+        title,
+        creatorID,
+        userDefinedTracks,
+        compilationTracks,
+        visibility,
+      } = body;
 
       // Return early if the user is requesting to impersonate another user and does not have the sufficient permissions
       if (
@@ -133,6 +141,13 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
           .map((p) => p.permission)
           .includes(Permission.IMPERSONATE_CREATE_COMPILATION)
       ) {
+        res.status(401).json({ error: "Insufficient Permissions" });
+        return;
+      }
+
+      if (visibility !== "PUBLIC" && visibility !== "PRIVATE") {
+        res.status(401).json({ error: "Invalid visibility" });
+        return;
       }
 
       try {
@@ -145,6 +160,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
             creator: {
               connect: { id: creatorID },
             },
+            visibility: visibility,
             compilationTracks: {
               updateMany: compilationTracks.map((track, idx) => ({
                 where: { id: track.id },

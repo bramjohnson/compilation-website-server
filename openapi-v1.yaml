@@ -106,6 +106,8 @@ paths:
                   type: string
                 creatorID:
                   type: integer
+                visibility:
+                  $ref: "#/components/schemas/CompilationVisibility"
                 userDefinedTracks:
                   type: array
                   items:
@@ -452,6 +454,8 @@ components:
           type: string
         avatarURL:
           type: string
+        compilations:
+          $ref: "#/components/schemas/Compilations"
     Compilations:
       type: array
       items:
@@ -476,10 +480,12 @@ components:
         creator:
           $ref: "#/components/schemas/User"
         visibility:
-          type: string
-          enum: [PRIVATE, PUBLIC]
+          $ref: "#/components/schemas/CompilationVisibility"
         compilationTracks:
           $ref: "#/components/schemas/CompilationTracks"
+    CompilationVisibility:
+      type: string
+      enum: [PRIVATE, PUBLIC]
     CompilationTracks:
       type: array
       items:
