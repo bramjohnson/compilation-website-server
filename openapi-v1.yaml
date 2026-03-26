@@ -242,6 +242,13 @@ paths:
           schema:
             type: string
           example: "Title (First Snow Mix)"
+        - name: isConnectedToNintendoMusicTrack
+          in: query
+          description: Is the UserDefined track connected to a NintendoMusicTrack?
+          required: false
+          schema:
+            type: boolean
+          example: false
       responses:
         "200":
           description: Successful listing
@@ -531,6 +538,8 @@ components:
           $ref: "#/components/schemas/UserDefinedAlbum"
         nintendoMusicLibraryTrackId:
           type: integer
+        nintendoMusicLibraryTrack:
+          $ref: "#/components/schemas/NintendoMusicTrack"
         spotifyGameTrackId:
           type: integer
     NintendoMusicAlbum:

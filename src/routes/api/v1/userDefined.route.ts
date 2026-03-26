@@ -87,6 +87,7 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
 
   const UserDefinedTrackQuerySchema = z.object({
     title: z.string().optional(),
+    isConnectedToNintendoMusicTrack: z.stringbool().optional(),
   });
 
   userDefinedRouter.get("/track", async (req, res) => {
@@ -99,14 +100,21 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
     }
 
     const query = parseResult.data;
-    const { title } = query;
+    const { title, isConnectedToNintendoMusicTrack } = query;
 
+    console.log(isConnectedToNintendoMusicTrack);
     const userDefinedTracks = await prismaClient.userDefinedTrack.findMany({
       where: {
         title: {
           contains: title,
           mode: "insensitive",
         },
+        nintendoMusicLibraryTrackId:
+          isConnectedToNintendoMusicTrack === undefined
+            ? undefined
+            : isConnectedToNintendoMusicTrack
+              ? { not: null }
+              : null,
       },
       include: {
         userDefinedAlbum: true,
