@@ -449,6 +449,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+  /compilation/{compilationId}/track/{trackId}:
+    patch:
+      operationId: updateCompilationTrack
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                addedToNMLPlaylist:
+                  type: boolean
+      parameters:
+        - name: compilationId
+          in: path
+          description: compilation ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: trackId
+          in: path
+          description: track ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Successful update
 
 components:
   schemas:

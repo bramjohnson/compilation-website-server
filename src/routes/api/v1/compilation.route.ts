@@ -64,6 +64,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
                   duration: true,
                   userDefinedAlbum: true,
                   nintendoMusicLibraryTrackId: true,
+                  nintendoMusicLibraryTrack: true,
                 },
               },
             },
@@ -266,6 +267,72 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
           },
         });
         res.json(compilation);
+      } catch (e) {
+        console.error(e);
+        res.status(500);
+      }
+    },
+  );
+
+  const CompilationPatchSchema = z.object({
+    addedToNMLPlaylist: z.boolean().optional(),
+  });
+
+  compilationRouter.patch(
+    "/:compilationId/track/:trackId",
+    authenticateMiddlewareClosure(prismaClient),
+    async (req: RequestWithResolvableUser, res) => {
+      const compilationId = req.params.compilationId as string;
+
+      const parseResult = CompilationPatchSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return res.status(400).json({
+          error: "Invalid query parameters",
+          details: parseResult.error,
+        });
+      }
+
+      const body = parseResult.data;
+      const { addedToNMLPlaylist } = body;
+
+      try {
+        const compilation = await prismaClient.compilation.findUnique({
+          where: {
+            id: parseInt(compilationId),
+          },
+        });
+
+        if (compilation?.creatorId !== req.user?.id) {
+          res.status(401).json({ error: "No access to this compilation" });
+          return;
+        }
+
+        const trackId = req.params.trackId as string;
+        const updatedCompilationTrack =
+          await prismaClient.compilationTrack.update({
+            where: {
+              id: parseInt(trackId),
+            },
+            data: {
+              addedToNMLPlaylist: addedToNMLPlaylist,
+            },
+            select: {
+              id: true,
+              position: true,
+              addedToNMLPlaylist: true,
+              userDefinedTrack: {
+                select: {
+                  id: true,
+                  title: true,
+                  duration: true,
+                  userDefinedAlbum: true,
+                  nintendoMusicLibraryTrackId: true,
+                  nintendoMusicLibraryTrack: true,
+                },
+              },
+            },
+          });
+        res.json(updatedCompilationTrack);
       } catch (e) {
         console.error(e);
         res.status(500);
