@@ -32,8 +32,6 @@ export async function createNintendoMusicTrack(prismaClient: PrismaClient, title
             },
         });
 
-
-
     if (updatedUserDefinedTracks.count > 0) {
         console.info(
             `Connected NintendoMusicTrack "${nintendoMusicTrack.title}" to UserDefinedTrack of the same name`,
