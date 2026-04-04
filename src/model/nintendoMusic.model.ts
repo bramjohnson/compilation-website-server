@@ -1,11 +1,12 @@
 import { NintendoMusicLibraryTrack, PrismaClient, UserDefinedAlbum } from "../generated/prisma/client";
 
-export async function createNintendoMusicTrack(prismaClient: PrismaClient, title: string, durationMillis: number, nintendoMusicAlbumId: number): Promise<NintendoMusicLibraryTrack> {
+export async function createNintendoMusicTrack(prismaClient: PrismaClient, title: string, durationMillis: number, nintendoMusicAlbumId: number, nintendoMusicId: string): Promise<NintendoMusicLibraryTrack> {
     const nintendoMusicTrack =
         await prismaClient.nintendoMusicLibraryTrack.create({
             data: {
                 title,
                 duration: durationMillis,
+                nintendoMusicId: nintendoMusicId,
                 nintendoMusicLibraryGameAlbum: {
                     connect: { id: nintendoMusicAlbumId },
                 },
@@ -38,22 +39,15 @@ export async function createNintendoMusicTrack(prismaClient: PrismaClient, title
         );
     } else {
         async function findOrCreateUserDefinedAlbum(): Promise<UserDefinedAlbum> {
-            const userDefinedAlbum = await prismaClient.userDefinedAlbum.findFirst({
-                where: {
-                    name: nintendoMusicTrack.nintendoMusicLibraryGameAlbum!.name,
-                },
-            });
-
-            if (userDefinedAlbum !== null) {
-                return userDefinedAlbum
-            }
-
             // If UserDefinedAlbum does not exist for Nintendo Music Track, create it.
             const newUserDefinedAlbum = await prismaClient.userDefinedAlbum.upsert({
                 where: {
                     name: nintendoMusicTrack.nintendoMusicLibraryGameAlbum!.name,
                 },
-                data: {
+                create: {
+                    name: nintendoMusicTrack.nintendoMusicLibraryGameAlbum!.name,
+                },
+                update: {
                     name: nintendoMusicTrack.nintendoMusicLibraryGameAlbum!.name,
                 },
             });

@@ -28,7 +28,7 @@ interface RawOfficialPlaylistsResponse {
   tracks: RawNintendoMusicTrack[];
 }
 
-function getRawNintendoMusicRespones(): [string[], RawNintendoMusicResponse[]] {
+function getRawNintendoMusicRespones(): [string[], RawOfficialPlaylistsResponse[]] {
   const rawResponseFilePaths = readdirSync("./mitmed/raw/officialPlaylists");
   console.log(rawResponseFilePaths);
   const rawRespones = rawResponseFilePaths.map((filePath) => {
@@ -78,13 +78,13 @@ function extractedNintendoMusicFromRawNintendoMusic(
 /* 
   Applies the extracted data to the database, updating it idempotently.
   1. Resolve a NintendoMusicGameAlbum from the extracted data:
-    1. Check for an exiting NintendoMusicGameAlbum with the nintendoMusicId field matching the extracted data.
-    1. If unresolved, look for an existing NintendoMusicGameAlbum with an identical name. Update the object with the nintendoMusicId field.
-    2. If unresolved, create a new NintendoMusicGameAlbum from the extracted data.
+    a. Check for an exiting NintendoMusicGameAlbum with the nintendoMusicId field matching the extracted data.
+    b. If unresolved, look for an existing NintendoMusicGameAlbum with an identical name. Update the object with the nintendoMusicId field.
+    c. If unresolved, create a new NintendoMusicGameAlbum from the extracted data.
   2. Resolve the NintendoMusicTracks from the extracted data:
-    1. Check for an existing NintendoMusicTrack with the nintendoMusicId field matching the extracted data.
-    2. If unresolved, look for an existing NintendoMusicTrack with an identical name and the same GameAlbum ID. Update the object with the nintendoMusicId field.
-    3. If unresolved, create a new NintendoMusicTrack from the extracted data.
+    a. Check for an existing NintendoMusicTrack with the nintendoMusicId field matching the extracted data.
+    b. If unresolved, look for an existing NintendoMusicTrack with an identical name and the same GameAlbum ID. Update the object with the nintendoMusicId field.
+    c. If unresolved, create a new NintendoMusicTrack from the extracted data.
 */
 async function applyExtractedData(prismaClient: PrismaClient, data: ExtractedNintendoMusic) {
   async function resolveGameAlbum(): Promise<NintendoMusicLibraryGameAlbum> {
@@ -99,6 +99,8 @@ async function applyExtractedData(prismaClient: PrismaClient, data: ExtractedNin
         nintendoMusicId: data.game.id
       }
     })
+
+    // Case 1a: An album already has the nintendoMusicId; update it.
     if (existingGameAlbum !== null) {
       console.debug(`Resolved ${data.game.id} ${data.game.name} to existing identical game album.`)
       return await prismaClient.nintendoMusicLibraryGameAlbum.update({
@@ -109,13 +111,15 @@ async function applyExtractedData(prismaClient: PrismaClient, data: ExtractedNin
         },
       })
     }
+    // INVARIANT: No album exists in the database with a matching nintendoMusicId
 
-    // Case 2
     const existingSimilarGameAlbum = await prismaClient.nintendoMusicLibraryGameAlbum.findFirst({
       where: {
         name: data.game.name
       }
     });
+
+    // Case 1b: An album is similarly named; update it and attach the nintendoMusicId
     if (existingSimilarGameAlbum !== null) {
       console.debug(`Resolved ${data.game.id} to existing similarly named game album ${existingSimilarGameAlbum.id} ${existingSimilarGameAlbum.name}`)
       const updatedSimilarGameAlbum = await prismaClient.nintendoMusicLibraryGameAlbum.update({
@@ -126,8 +130,9 @@ async function applyExtractedData(prismaClient: PrismaClient, data: ExtractedNin
       })
       return updatedSimilarGameAlbum
     }
+    // INVARIANT: No similarly named album exists in the database
 
-    // Case 3
+    // Case 1c: Create a new game album with the nintendoMusicId
     console.debug(`Resolved ${data.game.id} ${data.game.name} by creating a new game album`)
     return await prismaClient.nintendoMusicLibraryGameAlbum.create({
       data: gameData
@@ -146,6 +151,8 @@ async function applyExtractedData(prismaClient: PrismaClient, data: ExtractedNin
         nintendoMusicId: track.id
       }
     })
+
+    // Case 2a: A track exists with the nintendoMusicId; update it.
     if (existingTrack !== null) {
       console.debug(`Resolved ${track.id} ${track.name} to existing identical track.`)
       return await prismaClient.nintendoMusicLibraryTrack.update({
@@ -156,6 +163,7 @@ async function applyExtractedData(prismaClient: PrismaClient, data: ExtractedNin
         },
       })
     }
+    // INVARIANT: No track exists with the nintendoMusicId
 
     const existingSimilarTrack = await prismaClient.nintendoMusicLibraryTrack.findFirst({
       where: {
@@ -163,6 +171,8 @@ async function applyExtractedData(prismaClient: PrismaClient, data: ExtractedNin
         title: track.name,
       }
     })
+
+    // Case 2b: A similarly named track exists; update it and attach nintendoMusicId.
     if (existingSimilarTrack !== null) {
       console.debug(`Resolved ${track.id} to existing similarly named track ${existingSimilarTrack.id} ${existingSimilarTrack.title}`)
       return await prismaClient.nintendoMusicLibraryTrack.update({
@@ -172,9 +182,11 @@ async function applyExtractedData(prismaClient: PrismaClient, data: ExtractedNin
         }
       })
     }
+    // INVARIANT: No similarly named track exists in the database.
 
+    // Case 2c: Create the track with the resolved game ID and 
     console.debug(`Resolved ${track.id} ${track.name} by creating a new track`)
-    return await createNintendoMusicTrack(prismaClient, track.name, track.durationMillis, parentGame.id)
+    return await createNintendoMusicTrack(prismaClient, track.name, track.durationMillis, parentGame.id, track.id)
   }
 
   const resolvedGameAlbum = await resolveGameAlbum();
