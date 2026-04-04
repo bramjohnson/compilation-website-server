@@ -23,7 +23,7 @@ interface RawNintendoMusicGame {
   name: string;
 }
 
-interface RawNintendoMusicResponse {
+interface RawOfficialPlaylistsResponse {
   game: RawNintendoMusicGame;
   tracks: RawNintendoMusicTrack[];
 }
@@ -39,7 +39,7 @@ function getRawNintendoMusicRespones(): [string[], RawNintendoMusicResponse[]] {
   );
   const rawJsonResponses = rawRespones.map((response) =>
     JSON.parse(response.toString()),
-  ) as RawNintendoMusicResponse[];
+  ) as RawOfficialPlaylistsResponse[];
   return [rawResponseFilePaths, rawJsonResponses];
 }
 
@@ -60,7 +60,7 @@ interface ExtractedNintendoMusic {
 }
 
 function extractedNintendoMusicFromRawNintendoMusic(
-  rawNintendoMusic: RawNintendoMusicResponse,
+  rawNintendoMusic: RawOfficialPlaylistsResponse,
 ): ExtractedNintendoMusic {
   return {
     game: {
