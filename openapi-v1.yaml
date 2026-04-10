@@ -106,6 +106,8 @@ paths:
                   type: string
                 creatorID:
                   type: integer
+                thumbnailID:
+                  type: string
                 visibility:
                   $ref: "#/components/schemas/CompilationVisibility"
                 userDefinedTracks:

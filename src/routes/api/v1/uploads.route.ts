@@ -72,7 +72,7 @@ export function setupUploadsRouter(prismaClient: PrismaClient): Router {
                     data: { type, path: filePath, ownerId },
                 });
 
-                res.status(201).json({ id: image.id, type: image.type, ownerId: image.ownerId, path: image.path });
+                res.status(201).json({ id: image.id, type: image.type, ownerId: image.ownerId });
             } catch (err) {
                 next(err);
             }

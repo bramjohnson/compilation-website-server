@@ -73,7 +73,7 @@ model Compilation {
   description       String
   creatorId         Int
   thumbnailId       String?
-  thumbanil         Image?                @relation(fields: [thumbnailId], references: [id])
+  thumbnail         Image?                @relation(fields: [thumbnailId], references: [id])
   nintendoMusicURL  String?
   youtubeURL        String?
   visibility        CompilationVisibility @default(PRIVATE)

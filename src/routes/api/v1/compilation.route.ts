@@ -50,6 +50,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
               username: true,
             },
           },
+          thumbnail: true,
           compilationTracks: {
             select: {
               id: true,
@@ -83,6 +84,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
   const CompilationCreationBodySchema = z.object({
     title: z.string().nonempty(),
     creatorID: z.number().int().positive(),
+    thumbnailID: z.string().optional(),
     visibility: z.string(),
     userDefinedTracks: z.array(
       z.object({
@@ -127,6 +129,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
       const {
         title,
         creatorID,
+        thumbnailID,
         userDefinedTracks,
         compilationTracks,
         visibility,
@@ -160,6 +163,9 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
               connect: { id: creatorID },
             },
             visibility: visibility,
+            thumbnail: thumbnailID ? {
+              connect: { id: thumbnailID },
+            } : undefined,
             compilationTracks: {
               updateMany: compilationTracks.map((track, idx) => ({
                 where: { id: track.id },
@@ -176,6 +182,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
           },
           include: {
             creator: true,
+            thumbnail: true,
             compilationTracks: {
               select: {
                 id: true,
