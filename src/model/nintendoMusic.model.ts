@@ -38,27 +38,30 @@ export async function createNintendoMusicTrack(prismaClient: PrismaClient, title
             `Connected NintendoMusicTrack "${nintendoMusicTrack.title}" to UserDefinedTrack of the same name`,
         );
     } else {
-        async function findOrCreateUserDefinedAlbum(): Promise<UserDefinedAlbum> {
-            // If UserDefinedAlbum does not exist for Nintendo Music Track, create it.
-            const newUserDefinedAlbum = await prismaClient.userDefinedAlbum.upsert({
+        async function findOrCreateUserDefinedAlbum(gameName: string): Promise<UserDefinedAlbum> {
+            const existingUserDefinedAlbum = await prismaClient.userDefinedAlbum.findUnique({
                 where: {
-                    name: nintendoMusicTrack.nintendoMusicLibraryGameAlbum!.name,
-                },
-                create: {
-                    name: nintendoMusicTrack.nintendoMusicLibraryGameAlbum!.name,
-                },
-                update: {
-                    name: nintendoMusicTrack.nintendoMusicLibraryGameAlbum!.name,
-                },
-            });
+                    name: gameName,
+                }
+            })
 
+            // It already exists, we found it!
+            if (existingUserDefinedAlbum !== null) {
+                return existingUserDefinedAlbum
+            }
+
+            const newUserDefinedAlbum = await prismaClient.userDefinedAlbum.create({
+                data: {
+                    name: gameName
+                }
+            });
             console.info(
                 `Created the UserDefinedAlbum "${newUserDefinedAlbum.name}" during the creation of NintendoMusicTrack`,
             );
-            return newUserDefinedAlbum;
+            return newUserDefinedAlbum
         }
 
-        const userDefinedAlbum = await findOrCreateUserDefinedAlbum()
+        const userDefinedAlbum = await findOrCreateUserDefinedAlbum(nintendoMusicTrack.nintendoMusicLibraryGameAlbum.name)
         const userDefinedTrack = await prismaClient.userDefinedTrack.create({
             data: {
                 title,

@@ -6,6 +6,8 @@ import {
 } from "../../../generated/prisma/client";
 import { jwtVerify, SignJWT } from "jose";
 import bcrypt from "bcrypt";
+import z from "zod";
+import { parse } from "dotenv";
 
 const SALT_ROUNDS = 12;
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
@@ -54,11 +56,24 @@ export function authenticateMiddlewareClosure(prismaClient: PrismaClient) {
   };
 }
 
+const MINIMUM_USERNAME_LENGTH = 3;
+const MINIMUM_PASSWORD_LENGTH = 8;
 export function setupUserRouter(prismaClient: PrismaClient): Router {
   const userRouter = Router();
 
+  const UserRegisterBody = z.object({
+    username: z.string().min(MINIMUM_USERNAME_LENGTH),
+    password: z.string().min(MINIMUM_PASSWORD_LENGTH),
+  });
   userRouter.post("/register", async (req, res) => {
-    const { username, password } = req.body;
+    const parseResult = UserRegisterBody.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: "Invalid body",
+        details: parseResult.error,
+      });
+    }
+    const { username, password } = parseResult.data;
 
     try {
       const hashed = await bcrypt.hash(password, SALT_ROUNDS);

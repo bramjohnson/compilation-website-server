@@ -190,8 +190,14 @@ async function applyExtractedData(prismaClient: PrismaClient, data: ExtractedNin
   }
 
   const resolvedGameAlbum = await resolveGameAlbum();
-  const resolvedTracks = await Promise.all(data.tracks.map(track => resolveGameTrack(resolvedGameAlbum, track)));
-  console.info(`Resolved ${resolvedTracks.length} tracks!`)
+
+  const resolvedTracks = [];
+  for (const dataTrack of data.tracks) {
+    const resolved = await resolveGameTrack(resolvedGameAlbum, dataTrack);
+    resolvedTracks.push(resolved)
+  }
+
+  console.info(`Resolved ${resolvedTracks.length} tracks from ${data.game.name}!`)
 }
 
 function main() {

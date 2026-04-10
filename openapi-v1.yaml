@@ -434,6 +434,22 @@ paths:
       responses:
         "200":
           description: Successful login
+  /user/register:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Successful registration
   /user/authenticated:
     get:
       responses:
@@ -479,6 +495,123 @@ paths:
       responses:
         "200":
           description: Successful update
+  /images/upload/{type}:
+    post:
+      operationId: uploadImage
+      summary: Upload an image
+      parameters:
+        - $ref: "#/components/parameters/ImageTypeParam"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image, ownerId]
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: The image file to upload (JPEG, PNG, or WebP). Max 5MB.
+            encoding:
+              image:
+                contentType: image/jpeg, image/png, image/webp
+      responses:
+        "201":
+          description: Image uploaded successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Image"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /images/{id}:
+    get:
+      summary: Serve the original image
+      description: Returns the original (normalized) image file for the given ID.
+      parameters:
+        - $ref: "#/components/parameters/ImageIdParam"
+      responses:
+        "200":
+          description: The original image file.
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      summary: Delete an image
+      description: >
+        Deletes the image record from the database, removes the original file
+        from disk, and purges all cached resized variants for this image.
+      parameters:
+        - $ref: "#/components/parameters/ImageIdParam"
+      responses:
+        "200":
+          description: Image deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Image deleted.
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /images/{id}/resize:
+    get:
+      summary: Serve a resized image variant
+      description: >
+        Returns a resized WebP variant of the image. The variant is generated
+        on the first request and cached on disk. Subsequent requests for the
+        same dimensions are served directly from cache. Aspect ratio is always
+        preserved and images are never upscaled.
+      parameters:
+        - $ref: "#/components/parameters/ImageIdParam"
+        - name: w
+          in: query
+          required: true
+          description: Target width in pixels (1–4096).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 4096
+          example: 256
+        - name: h
+          in: query
+          required: true
+          description: Target height in pixels (1–4096).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 4096
+          example: 256
+      responses:
+        "200":
+          description: The resized image file.
+          content:
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
 components:
   schemas:
@@ -514,6 +647,8 @@ components:
           type: string
         creatorId:
           type: integer
+        thumbnail:
+          $ref: "#/components/schemas/Image"
         creator:
           $ref: "#/components/schemas/User"
         visibility:
@@ -599,6 +734,8 @@ components:
           type: integer
         title:
           type: string
+        duration:
+          type: integer
     NintendoMusicTracks:
       type: array
       items:
@@ -616,3 +753,74 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/NintendoMusicTrackWithAlbum"
+    ImageType:
+      type: string
+      enum: [PROFILE_PICTURE, THUMBNAIL]
+      description: The category of the image.
+    Image:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique ID of the created image record.
+          example: clx3k2m0f0000abcd1234efgh
+        type:
+          $ref: "#/components/schemas/ImageType"
+        ownerId:
+          type: integer
+          description: The ID of the entity that owns this image.
+          example: 1
+        path:
+          type: string
+          description: The URL of the image.
+          example: image.png
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: A human-readable error message.
+          example: Image not found.
+  responses:
+    BadRequest:
+      description: The request was malformed or missing required fields.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: Query params w and h are required and must be between 1–4096.
+    NotFound:
+      description: The requested image does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: Image not found.
+    InternalServerError:
+      description: An unexpected server error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: Internal server error.
+  parameters:
+    ImageIdParam:
+      name: id
+      in: path
+      required: true
+      description: The unique ID of the image (cuid).
+      schema:
+        type: string
+      example: clx3k2m0f0000abcd1234efgh
+    ImageTypeParam:
+      name: type
+      in: path
+      required: true
+      description: The category of image being uploaded.
+      schema:
+        type: string
+        enum: [profile_picture, thumbnail]
+      example: profile_picture

@@ -1,8 +1,6 @@
 import {
-  CompilationVisibility,
   Permission,
   PrismaClient,
-  User,
 } from "../../../generated/prisma/client";
 import { Router } from "express";
 import z from "zod";

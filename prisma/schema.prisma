@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -12,37 +9,29 @@ datasource db {
 
 model User {
   id                  Int              @id @default(autoincrement())
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
   username            String           @unique
   password            String
   displayName         String?
-  avatarURL           String?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
   compilations        Compilation[]
-  permissionsGranted  UserPermission[] @relation("PermissionsGranted")
   permissionsReceived UserPermission[] @relation("PermissionsReceived")
+  permissionsGranted  UserPermission[] @relation("PermissionsGranted")
+  images              Image[]          @relation("OwnedImages")
+  avatar              Image?           @relation("AvatarImage", fields: [avatarId], references: [id])
+  avatarId            String?          @unique
 }
 
 model UserPermission {
   id         Int        @id @default(autoincrement())
   permission Permission
-
-  grantorId Int
-  grantor   User @relation("PermissionsGranted", fields: [grantorId], references: [id])
-  granteeId Int
-  grantee   User @relation("PermissionsReceived", fields: [granteeId], references: [id])
-
-  createdAt DateTime @default(now())
+  grantorId  Int
+  granteeId  Int
+  createdAt  DateTime   @default(now())
+  grantee    User       @relation("PermissionsReceived", fields: [granteeId], references: [id])
+  grantor    User       @relation("PermissionsGranted", fields: [grantorId], references: [id])
 
   @@unique([grantorId, granteeId, permission])
-}
-
-enum Permission {
-  CREATE_NINTENDO_MUSIC_TRACK
-  CREATE_NINTENDO_MUSIC_ALBUM
-  IMPERSONATE_CREATE_COMPILATION
-  IMPERSONATE_EDIT_COMPILATION
-  IMPERSONATE_DELETE_COMPILATION
 }
 
 model SpotifyGameAlbum {
@@ -56,25 +45,25 @@ model SpotifyGameTrack {
   id                 Int                @id @default(autoincrement())
   title              String
   duration           Int
-  userDefinedTracks  UserDefinedTrack[]
-  spotifyGameAlbum   SpotifyGameAlbum?  @relation(fields: [spotifyGameAlbumId], references: [id])
   spotifyGameAlbumId Int?
+  spotifyGameAlbum   SpotifyGameAlbum?  @relation(fields: [spotifyGameAlbumId], references: [id])
+  userDefinedTracks  UserDefinedTrack[]
 }
 
 model NintendoMusicLibraryGameAlbum {
   id              Int                         @id @default(autoincrement())
-  nintendoMusicId String?                     @unique
   name            String
+  nintendoMusicId String?                     @unique
   tracks          NintendoMusicLibraryTrack[]
 }
 
 model NintendoMusicLibraryTrack {
   id                              Int                            @id @default(autoincrement())
-  nintendoMusicId                 String?                        @unique
   title                           String
   duration                        Int
-  nintendoMusicLibraryGameAlbum   NintendoMusicLibraryGameAlbum? @relation(fields: [nintendoMusicLibraryGameAlbumId], references: [id])
   nintendoMusicLibraryGameAlbumId Int?
+  nintendoMusicId                 String?                        @unique
+  nintendoMusicLibraryGameAlbum   NintendoMusicLibraryGameAlbum? @relation(fields: [nintendoMusicLibraryGameAlbumId], references: [id])
   userDefinedTracks               UserDefinedTrack[]
 }
 
@@ -82,28 +71,24 @@ model Compilation {
   id                Int                   @id @default(autoincrement())
   name              String
   description       String
-  thumbnailURL      String?
-  youtubeURL        String?
-  nintendoMusicURL  String?
-  creator           User                  @relation(fields: [creatorId], references: [id])
   creatorId         Int
-  compilationTracks CompilationTrack[]
+  thumbnailId       String?
+  thumbanil         Image?                @relation(fields: [thumbnailId], references: [id])
+  nintendoMusicURL  String?
+  youtubeURL        String?
   visibility        CompilationVisibility @default(PRIVATE)
-}
-
-enum CompilationVisibility {
-  PRIVATE
-  PUBLIC
+  creator           User                  @relation(fields: [creatorId], references: [id])
+  compilationTracks CompilationTrack[]
 }
 
 model CompilationTrack {
   id                 Int              @id @default(autoincrement())
-  compilation        Compilation      @relation(fields: [compilationId], references: [id])
   compilationId      Int
   position           Int
   addedToNMLPlaylist Boolean
-  userDefinedTrack   UserDefinedTrack @relation(fields: [userDefinedTrackId], references: [id])
   userDefinedTrackId Int
+  compilation        Compilation      @relation(fields: [compilationId], references: [id])
+  userDefinedTrack   UserDefinedTrack @relation(fields: [userDefinedTrackId], references: [id])
 }
 
 model UserDefinedAlbum {
@@ -116,11 +101,40 @@ model UserDefinedTrack {
   id                          Int                        @id @default(autoincrement())
   title                       String
   duration                    Int
-  userDefinedAlbum            UserDefinedAlbum           @relation(fields: [userDefinedAlbumId], references: [id])
   userDefinedAlbumId          Int
-  nintendoMusicLibraryTrack   NintendoMusicLibraryTrack? @relation(fields: [nintendoMusicLibraryTrackId], references: [id])
   nintendoMusicLibraryTrackId Int?
-  compilationTracks           CompilationTrack[]
-  spotifyGameTrack            SpotifyGameTrack?          @relation(fields: [spotifyGameTrackId], references: [id])
   spotifyGameTrackId          Int?
+  compilationTracks           CompilationTrack[]
+  nintendoMusicLibraryTrack   NintendoMusicLibraryTrack? @relation(fields: [nintendoMusicLibraryTrackId], references: [id])
+  spotifyGameTrack            SpotifyGameTrack?          @relation(fields: [spotifyGameTrackId], references: [id])
+  userDefinedAlbum            UserDefinedAlbum           @relation(fields: [userDefinedAlbumId], references: [id])
+}
+
+enum Permission {
+  IMPERSONATE_CREATE_COMPILATION
+  IMPERSONATE_EDIT_COMPILATION
+  IMPERSONATE_DELETE_COMPILATION
+  CREATE_NINTENDO_MUSIC_TRACK
+  CREATE_NINTENDO_MUSIC_ALBUM
+}
+
+enum CompilationVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum ImageType {
+  PROFILE_PICTURE
+  THUMBNAIL
+}
+
+model Image {
+  id           String        @id @default(cuid())
+  type         ImageType
+  path         String
+  ownerId      Int
+  owner        User          @relation("OwnedImages", fields: [ownerId], references: [id])
+  createdAt    DateTime      @default(now())
+  compilations Compilation[]
+  avatarOwner  User?         @relation("AvatarImage")
 }

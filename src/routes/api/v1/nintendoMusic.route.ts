@@ -1,6 +1,5 @@
 import { Router } from "express";
 import z from "zod";
-import { optionalStringQuery } from "../../../util/prisma.util";
 import { PrismaClient } from "../../../generated/prisma/client";
 
 export function setupNintendoMusicRouter(prismaClient: PrismaClient): Router {
