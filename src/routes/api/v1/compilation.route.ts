@@ -26,7 +26,9 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
 
   compilationRouter.get("/", async (req, res) => {
     try {
-      const compilations = await prismaClient.compilation.findMany();
+      const compilations = await prismaClient.compilation.findMany({
+
+      });
       res.json(compilations);
     } catch (e) {
       console.error(e);
@@ -194,6 +196,8 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
                     title: true,
                     duration: true,
                     userDefinedAlbum: true,
+                    nintendoMusicLibraryTrackId: true,
+                    nintendoMusicLibraryTrack: true
                   },
                 },
               },

@@ -651,6 +651,8 @@ components:
           type: integer
         thumbnail:
           $ref: "#/components/schemas/Image"
+        thumbnailId:
+          type: string
         creator:
           $ref: "#/components/schemas/User"
         visibility:
