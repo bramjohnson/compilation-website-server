@@ -79,6 +79,8 @@ model Compilation {
   visibility        CompilationVisibility @default(PRIVATE)
   creator           User                  @relation(fields: [creatorId], references: [id])
   compilationTracks CompilationTrack[]
+  originalRelease   DateTime?
+  createdAt         DateTime              @default(now())
 }
 
 model CompilationTrack {

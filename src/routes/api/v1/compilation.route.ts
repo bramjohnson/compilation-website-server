@@ -1,7 +1,4 @@
-import {
-  Permission,
-  PrismaClient,
-} from "../../../generated/prisma/client";
+import { Permission, PrismaClient } from "../../../generated/prisma/client";
 import { Router } from "express";
 import z from "zod";
 import {
@@ -24,10 +21,29 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     },
   );
 
+  const CompilationFilterParamsSchema = z.object({
+    createdAt: z.enum(["desc", "asc"]).optional(),
+    limit: z.string().transform(Number).pipe(z.number().int()).optional(),
+  });
   compilationRouter.get("/", async (req, res) => {
+    const parseParamsResult = CompilationFilterParamsSchema.safeParse(
+      req.query,
+    );
+    if (!parseParamsResult.success) {
+      return res.status(400).json({
+        error: "Invalid query parameters",
+        details: parseParamsResult.error,
+      });
+    }
+
+    const { createdAt, limit } = parseParamsResult.data;
+
     try {
       const compilations = await prismaClient.compilation.findMany({
-
+        orderBy: {
+          createdAt,
+        },
+        take: limit,
       });
       res.json(compilations);
     } catch (e) {
@@ -88,6 +104,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     creatorID: z.number().int().positive(),
     thumbnailID: z.string().optional(),
     visibility: z.string(),
+    originalRelease: z.iso.datetime().optional(),
     userDefinedTracks: z.array(
       z.object({
         id: z.number().int().positive(),
@@ -135,6 +152,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
         userDefinedTracks,
         compilationTracks,
         visibility,
+        originalRelease,
       } = body;
 
       // Return early if the user is requesting to impersonate another user and does not have the sufficient permissions
@@ -165,9 +183,12 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
               connect: { id: creatorID },
             },
             visibility: visibility,
-            thumbnail: thumbnailID ? {
-              connect: { id: thumbnailID },
-            } : undefined,
+            originalRelease: originalRelease,
+            thumbnail: thumbnailID
+              ? {
+                  connect: { id: thumbnailID },
+                }
+              : undefined,
             compilationTracks: {
               updateMany: compilationTracks.map((track, idx) => ({
                 where: { id: track.id },
@@ -197,7 +218,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
                     duration: true,
                     userDefinedAlbum: true,
                     nintendoMusicLibraryTrackId: true,
-                    nintendoMusicLibraryTrack: true
+                    nintendoMusicLibraryTrack: true,
                   },
                 },
               },

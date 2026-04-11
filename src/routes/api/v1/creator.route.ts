@@ -85,6 +85,7 @@ export function setupCreatorRouter(prismaClient: PrismaClient): Router {
       select: {
         id: true,
         username: true,
+        createdAt: true,
         password: false,
       },
     });

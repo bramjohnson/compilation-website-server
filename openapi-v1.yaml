@@ -58,6 +58,15 @@ paths:
     get:
       summary: Lists all compilations
       operationId: filterCompilations
+      parameters:
+        - name: limit
+          in: query
+          description: The amount to take
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - $ref: "#/components/parameters/CreatedAtSortParam"
       responses:
         "200":
           description: Successful listing
@@ -108,6 +117,9 @@ paths:
                   type: integer
                 thumbnailID:
                   type: string
+                originalRelease:
+                  type: string
+                  format: date-time
                 visibility:
                   $ref: "#/components/schemas/CompilationVisibility"
                 userDefinedTracks:
@@ -659,6 +671,9 @@ components:
           $ref: "#/components/schemas/CompilationVisibility"
         compilationTracks:
           $ref: "#/components/schemas/CompilationTracks"
+        originalRelease:
+          type: string
+          format: date-time
     CompilationVisibility:
       type: string
       enum: [PRIVATE, PUBLIC]
@@ -828,3 +843,12 @@ components:
         type: string
         enum: [profile_picture, thumbnail]
       example: profile_picture
+    CreatedAtSortParam:
+      name: createdAt
+      in: query
+      required: false
+      description: Sorts the results by creation date
+      schema:
+        type: string
+        enum: [desc, asc]
+      example: desc
