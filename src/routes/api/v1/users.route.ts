@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response, Router } from "express";
+import { NextFunction, request, Request, Response, Router } from "express";
 import {
   PrismaClient,
   User,
@@ -149,6 +149,54 @@ export function setupUserRouter(prismaClient: PrismaClient): Router {
       }
     },
   );
+
+  const UserPatchBodySchema = z.object({
+    bannerId: z.string().optional()
+  });
+  userRouter.patch("/:id", authenticateMiddlewareClosure(prismaClient), async (req: RequestWithResolvableUser, res: Response) => {
+    if (req.user === undefined) {
+      return res.status(403).json({ error: "Unauthenticated" })
+    }
+
+    const authenticatedUser = req.user;
+    const requestingForUserId = parseInt(req.params.id)
+    const requestingForUser = await prismaClient.user.findUnique({ where: { id: requestingForUserId } })
+
+    if (requestingForUser === null) {
+      return res.status(404).json({ error: "Could not find associate user" })
+    }
+
+    if (requestingForUser.id !== authenticatedUser.id && !authenticatedUser.permissionsReceived.some(permission => permission.permission === "IMPERSONATE_EDIT_USER")) {
+      return res.status(403).json({ error: "Cannot impersonate another user" })
+    }
+
+    const parseBodyResult = UserPatchBodySchema.safeParse(
+      req.body,
+    );
+    if (!parseBodyResult.success) {
+      return res.status(400).json({
+        error: "Invalid body",
+        details: parseBodyResult.error,
+      });
+    }
+
+    const { bannerId } = parseBodyResult.data
+
+    const response = await prismaClient.user.update({
+      where: {
+        id: requestingForUserId
+      },
+      data: {
+        banner: {
+          connect: {
+            id: bannerId
+          }
+        }
+      }
+    })
+
+    return res.json(response)
+  })
 
   return userRouter;
 }

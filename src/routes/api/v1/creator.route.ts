@@ -45,7 +45,6 @@ export function setupCreatorRouter(prismaClient: PrismaClient): Router {
             select: {
               id: true,
               name: true,
-              thumbnailURL: true,
             },
           },
         },

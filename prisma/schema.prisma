@@ -20,6 +20,8 @@ model User {
   images              Image[]          @relation("OwnedImages")
   avatar              Image?           @relation("AvatarImage", fields: [avatarId], references: [id])
   avatarId            String?          @unique
+  banner              Image?           @relation("BannerImage", fields: [bannerId], references: [id])
+  bannerId            String?          @unique
 }
 
 model UserPermission {
@@ -118,6 +120,7 @@ enum Permission {
   IMPERSONATE_DELETE_COMPILATION
   CREATE_NINTENDO_MUSIC_TRACK
   CREATE_NINTENDO_MUSIC_ALBUM
+  IMPERSONATE_EDIT_USER
 }
 
 enum CompilationVisibility {
@@ -128,6 +131,7 @@ enum CompilationVisibility {
 enum ImageType {
   PROFILE_PICTURE
   THUMBNAIL
+  BANNER
 }
 
 model Image {
@@ -139,4 +143,5 @@ model Image {
   createdAt    DateTime      @default(now())
   compilations Compilation[]
   avatarOwner  User?         @relation("AvatarImage")
+  bannerOwner  User?         @relation("BannerImage")
 }
