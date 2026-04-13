@@ -8,11 +8,13 @@ import { jwtVerify, SignJWT } from "jose";
 import bcrypt from "bcrypt";
 import z from "zod";
 import { parse } from "dotenv";
+import { PrismaClientValidationError } from "../../../generated/prisma/internal/prismaNamespace";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
 
 const SALT_ROUNDS = 12;
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
-export interface UserWithPermissions extends User { }
+export interface UserWithPermissions extends User {}
 
 export interface RequestWithResolvableUser extends Request {
   user?: User & { permissionsReceived: UserPermission[] };
@@ -86,10 +88,11 @@ export function setupUserRouter(prismaClient: PrismaClient): Router {
         username: user.username,
       });
     } catch (err) {
-      if (err.code === "P2002") {
-        return res.status(409).json({ error: "Username already taken" });
+      if (err instanceof PrismaClientKnownRequestError) {
+        if (err.code === "P2002") {
+          return res.status(409).json({ error: "Username already taken" });
+        }
       }
-
       console.error(err);
       return res.status(500).json({ error: "Internal server error" });
     }
@@ -130,13 +133,17 @@ export function setupUserRouter(prismaClient: PrismaClient): Router {
     }
   });
 
-  userRouter.get("/session", authenticateMiddlewareClosure(prismaClient), async (req: RequestWithResolvableUser, res) => {
-    if (req.user === undefined) {
-      return res.status(403).json({ error: "Not authenticated" });
-    } else {
-      return res.status(200).json(req.user);
-    }
-  })
+  userRouter.get(
+    "/session",
+    authenticateMiddlewareClosure(prismaClient),
+    async (req: RequestWithResolvableUser, res) => {
+      if (req.user === undefined) {
+        return res.status(403).json({ error: "Not authenticated" });
+      } else {
+        return res.status(200).json(req.user);
+      }
+    },
+  );
 
   userRouter.get(
     "/authenticated",
@@ -151,52 +158,71 @@ export function setupUserRouter(prismaClient: PrismaClient): Router {
   );
 
   const UserPatchBodySchema = z.object({
-    bannerId: z.string().optional()
+    avatarId: z.string().optional(),
+    bannerId: z.string().optional(),
   });
-  userRouter.patch("/:id", authenticateMiddlewareClosure(prismaClient), async (req: RequestWithResolvableUser, res: Response) => {
-    if (req.user === undefined) {
-      return res.status(403).json({ error: "Unauthenticated" })
-    }
-
-    const authenticatedUser = req.user;
-    const requestingForUserId = parseInt(req.params.id)
-    const requestingForUser = await prismaClient.user.findUnique({ where: { id: requestingForUserId } })
-
-    if (requestingForUser === null) {
-      return res.status(404).json({ error: "Could not find associate user" })
-    }
-
-    if (requestingForUser.id !== authenticatedUser.id && !authenticatedUser.permissionsReceived.some(permission => permission.permission === "IMPERSONATE_EDIT_USER")) {
-      return res.status(403).json({ error: "Cannot impersonate another user" })
-    }
-
-    const parseBodyResult = UserPatchBodySchema.safeParse(
-      req.body,
-    );
-    if (!parseBodyResult.success) {
-      return res.status(400).json({
-        error: "Invalid body",
-        details: parseBodyResult.error,
-      });
-    }
-
-    const { bannerId } = parseBodyResult.data
-
-    const response = await prismaClient.user.update({
-      where: {
-        id: requestingForUserId
-      },
-      data: {
-        banner: {
-          connect: {
-            id: bannerId
-          }
-        }
+  userRouter.patch(
+    "/:id",
+    authenticateMiddlewareClosure(prismaClient),
+    async (req: RequestWithResolvableUser, res: Response) => {
+      if (req.user === undefined) {
+        return res.status(403).json({ error: "Unauthenticated" });
       }
-    })
 
-    return res.json(response)
-  })
+      const authenticatedUser = req.user;
+      const requestingForUserId = parseInt(req.params.id);
+      const requestingForUser = await prismaClient.user.findUnique({
+        where: { id: requestingForUserId },
+      });
+
+      if (requestingForUser === null) {
+        return res.status(404).json({ error: "Could not find associate user" });
+      }
+
+      if (
+        requestingForUser.id !== authenticatedUser.id &&
+        !authenticatedUser.permissionsReceived.some(
+          (permission) =>
+            permission.permission === "IMPERSONATE_EDIT_USER" ||
+            permission.permission === "OVERLORD",
+        )
+      ) {
+        return res
+          .status(403)
+          .json({ error: "Cannot impersonate another user" });
+      }
+
+      const parseBodyResult = UserPatchBodySchema.safeParse(req.body);
+      if (!parseBodyResult.success) {
+        return res.status(400).json({
+          error: "Invalid body",
+          details: parseBodyResult.error,
+        });
+      }
+
+      const { avatarId, bannerId } = parseBodyResult.data;
+
+      const response = await prismaClient.user.update({
+        where: {
+          id: requestingForUserId,
+        },
+        data: {
+          ...(avatarId !== undefined && {
+            avatar: {
+              connect: { id: avatarId },
+            },
+          }),
+          ...(bannerId !== undefined && {
+            banner: {
+              connect: { id: bannerId },
+            },
+          }),
+        },
+      });
+
+      return res.json(response);
+    },
+  );
 
   return userRouter;
 }

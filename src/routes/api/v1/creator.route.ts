@@ -47,6 +47,7 @@ export function setupCreatorRouter(prismaClient: PrismaClient): Router {
               name: true,
             },
           },
+          permissionsReceived: true,
         },
       });
       res.json(creator);

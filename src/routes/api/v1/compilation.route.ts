@@ -44,6 +44,19 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
           createdAt,
         },
         take: limit,
+        select: {
+          id: true,
+          name: true,
+          thumbnailId: true,
+          originalRelease: true,
+          createdAt: true,
+          creator: {
+            select: {
+              id: true,
+              username: true,
+            },
+          },
+        },
       });
       res.json(compilations);
     } catch (e) {
@@ -66,6 +79,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
             select: {
               id: true,
               username: true,
+              avatarId: true,
             },
           },
           thumbnail: true,
@@ -159,9 +173,11 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
       if (
         req.user &&
         creatorID !== req.user.id &&
-        !req.user.permissionsReceived
-          .map((p) => p.permission)
-          .includes(Permission.IMPERSONATE_CREATE_COMPILATION)
+        !req.user.permissionsReceived.some(
+          (p) =>
+            p.permission === Permission.IMPERSONATE_CREATE_COMPILATION ||
+            p.permission === Permission.OVERLORD,
+        )
       ) {
         res.status(401).json({ error: "Insufficient Permissions" });
         return;
