@@ -663,6 +663,8 @@ components:
           type: string
         avatarId:
           type: string
+        bannerId:
+          type: string
         compilations:
           $ref: "#/components/schemas/Compilations"
         permissionsReceived:
@@ -816,7 +818,7 @@ components:
         $ref: "#/components/schemas/NintendoMusicTrackWithAlbum"
     ImageType:
       type: string
-      enum: [PROFILE_PICTURE, THUMBNAIL]
+      enum: [PROFILE_PICTURE, THUMBNAIL, BANNER]
       description: The category of the image.
     Image:
       type: object
@@ -883,7 +885,7 @@ components:
       description: The category of image being uploaded.
       schema:
         type: string
-        enum: [profile_picture, thumbnail]
+        enum: [profile_picture, thumbnail, banner]
       example: profile_picture
     CreatedAtSortParam:
       name: createdAt

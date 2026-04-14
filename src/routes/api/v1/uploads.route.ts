@@ -18,7 +18,7 @@ const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const IMAGE_CONSTRAINTS: Record<ImageType, { width: number; height: number }> = {
     PROFILE_PICTURE: { width: 1024, height: 1024 },
     THUMBNAIL: { width: 1920, height: 1080 },
-    BANNER: { width: 1920, height: 540, }
+    BANNER: { width: 1920, height: 240, }
 };
 
 
