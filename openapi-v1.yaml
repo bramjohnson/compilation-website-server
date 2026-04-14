@@ -120,6 +120,8 @@ paths:
                 originalRelease:
                   type: string
                   format: date-time
+                nintendoMusicURL:
+                  type: string
                 visibility:
                   $ref: "#/components/schemas/CompilationVisibility"
                 userDefinedTracks:
@@ -682,7 +684,16 @@ components:
           $ref: "#/components/schemas/Permission"
     Permission:
       type: string
-      enum: [OVERLORD, IMPERSONATE_CREATE_COMPILATION, IMPERSONATE_EDIT_COMPILATION, IMPERSONATE_DELETE_COMPILATION, CREATE_NINTENDO_MUSIC_TRACK, CREATE_NINTENDO_MUSIC_ALBUM, IMPERSONATE_EDIT_USER]
+      enum:
+        [
+          OVERLORD,
+          IMPERSONATE_CREATE_COMPILATION,
+          IMPERSONATE_EDIT_COMPILATION,
+          IMPERSONATE_DELETE_COMPILATION,
+          CREATE_NINTENDO_MUSIC_TRACK,
+          CREATE_NINTENDO_MUSIC_ALBUM,
+          IMPERSONATE_EDIT_USER,
+        ]
       description: The permission
     Compilations:
       type: array

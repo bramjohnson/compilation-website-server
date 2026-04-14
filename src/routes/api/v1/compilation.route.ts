@@ -131,6 +131,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
         position: z.number().int().min(0),
       }),
     ),
+    nintendoMusicURL: z.url().optional()
   });
 
   compilationRouter.put(
@@ -166,6 +167,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
         userDefinedTracks,
         compilationTracks,
         visibility,
+        nintendoMusicURL,
         originalRelease,
       } = body;
 
@@ -200,10 +202,11 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
             },
             visibility: visibility,
             originalRelease: originalRelease,
+            nintendoMusicURL: nintendoMusicURL,
             thumbnail: thumbnailID
               ? {
-                  connect: { id: thumbnailID },
-                }
+                connect: { id: thumbnailID },
+              }
               : undefined,
             compilationTracks: {
               updateMany: compilationTracks.map((track, idx) => ({
