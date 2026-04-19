@@ -24,6 +24,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
   const CompilationFilterParamsSchema = z.object({
     createdAt: z.enum(["desc", "asc"]).optional(),
     limit: z.string().transform(Number).pipe(z.number().int()).optional(),
+    cursor: z.string().transform(Number).pipe(z.number().int()).optional(),
   });
   compilationRouter.get("/", async (req, res) => {
     const parseParamsResult = CompilationFilterParamsSchema.safeParse(
@@ -36,14 +37,22 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
       });
     }
 
-    const { createdAt, limit } = parseParamsResult.data;
+    const { createdAt, limit, cursor } = parseParamsResult.data;
+
+    const querySkip = cursor !== undefined ? 1 : undefined
+    const queryTake = limit || 5
+    const queryCursor = cursor !== undefined ? {
+      id: cursor
+    } : undefined
 
     try {
       const compilations = await prismaClient.compilation.findMany({
         orderBy: {
           createdAt,
         },
-        take: limit,
+        cursor: queryCursor,
+        skip: querySkip,
+        take: queryTake,
         select: {
           id: true,
           name: true,
