@@ -15,10 +15,10 @@ import { ReadableStream } from "node:stream/web";
 // Config
 // -------------------------------------------------------
 
-const IMAGE_SERVER_USERNAME = process.env.IMAGE_SERVER_USERNAME || "user";
+const IMAGE_SERVER_USERNAME = process.env.IMAGES_SERVER_USERNAME || "user";
 const IMAGE_SERVER_PASSWORD =
-  process.env.IMAGE_SERVER_PASSWORD || "IMAGE_SERVER_PASSWORD";
-const IMAGE_SERVER_URL = process.env.IMAGE_SERVER_URL || "http://example.com";
+  process.env.IMAGES_SERVER_PASSWORD || "IMAGE_SERVER_PASSWORD";
+const IMAGE_SERVER_URL = process.env.IMAGES_SERVER_URL || "http://example.com";
 
 const UPLOAD_DIR = path.resolve("uploads");
 const CACHE_DIR = path.resolve("uploads/cache");
