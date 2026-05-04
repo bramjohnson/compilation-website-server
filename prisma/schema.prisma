@@ -139,8 +139,8 @@ enum ImageType {
 
 model Image {
   id           String        @id @default(cuid())
+  remoteKey    String        @unique
   type         ImageType
-  path         String
   ownerId      Int
   owner        User          @relation("OwnedImages", fields: [ownerId], references: [id])
   createdAt    DateTime      @default(now())

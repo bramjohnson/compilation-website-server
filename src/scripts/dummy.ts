@@ -8,14 +8,13 @@ function randomTimestamp(): string {
 }
 
 const prismaClient = createPrismaClient();
-const compilations = await prismaClient.compilation.findMany({
+const images = await prismaClient.image.findMany({
   select: { id: true },
 });
 await prismaClient.$transaction(
-  compilations.map((c) =>
-    prismaClient.compilation.update({
+  images.map((c) =>
+    prismaClient.image.delete({
       where: { id: c.id },
-      data: { createdAt: randomTimestamp() },
     }),
   ),
 );

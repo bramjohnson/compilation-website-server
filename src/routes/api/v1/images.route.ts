@@ -8,10 +8,17 @@ import {
   authenticateMiddlewareClosure,
   RequestWithResolvableUser,
 } from "./users.route";
+import { Readable } from "stream";
+import { ReadableStream } from "node:stream/web";
 
 // -------------------------------------------------------
 // Config
 // -------------------------------------------------------
+
+const IMAGE_SERVER_USERNAME = process.env.IMAGE_SERVER_USERNAME || "user";
+const IMAGE_SERVER_PASSWORD =
+  process.env.IMAGE_SERVER_PASSWORD || "IMAGE_SERVER_PASSWORD";
+const IMAGE_SERVER_URL = process.env.IMAGE_SERVER_URL || "http://example.com";
 
 const UPLOAD_DIR = path.resolve("uploads");
 const CACHE_DIR = path.resolve("uploads/cache");
@@ -37,9 +44,46 @@ const upload = multer({
   },
 });
 
+class ImageServerInterface {
+  private username: String;
+  private password: String;
+
+  constructor(username: String, password: String) {
+    this.username = username;
+    this.password = password;
+  }
+
+  getHeaders() {
+    const authHeaders = new Headers();
+    authHeaders.set(
+      "Authorization",
+      "Basic " + btoa(this.username + ":" + this.password),
+    );
+    return authHeaders;
+  }
+
+  async getImage(id: string) {
+    return await fetch(`${IMAGE_SERVER_URL}/image/${id}`, {
+      headers: this.getHeaders(),
+    });
+  }
+
+  async postImage(form: FormData) {
+    return await fetch(IMAGE_SERVER_URL, {
+      method: "POST",
+      body: form,
+      headers: this.getHeaders(),
+    });
+  }
+}
+
 // Router
-export function setupUploadsRouter(prismaClient: PrismaClient): Router {
+export function setupImagesRouter(prismaClient: PrismaClient): Router {
   const router = Router();
+  const imageServer = new ImageServerInterface(
+    IMAGE_SERVER_USERNAME,
+    IMAGE_SERVER_PASSWORD,
+  );
 
   // -------------------------------------------------------
   // POST /images/upload/:type
@@ -73,30 +117,13 @@ export function setupUploadsRouter(prismaClient: PrismaClient): Router {
         }
 
         const ownerId = user.id;
-
-        // Generate a unique filename for the original
-        const filename = `${ownerId}_${Date.now()}.webp`;
-        const filePath = await saveOriginal(req.file.buffer, type, filename);
-
-        // const image = await prismaClient.image.create({
-        //   data: { type, path: filePath, ownerId },
-        // });
-
         const form = new FormData();
         const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
         form.append("image", blob, req.file.originalname);
 
-        const imageServerRes = await fetch(
-          `${process.env.IMAGES_SERVER_URL}/`,
-          {
-            method: "POST",
-            body: form,
-            // No need to set Content-Type — fetch sets it automatically
-            // with the correct boundary when body is a FormData instance.
-          },
-        );
-
+        const imageServerRes = await imageServer.postImage(form);
         console.log(imageServerRes);
+
         const responsebody = await imageServerRes.json();
         console.log(responsebody);
         console.log(responsebody.id);
@@ -141,17 +168,27 @@ export function setupUploadsRouter(prismaClient: PrismaClient): Router {
         const image = await prismaClient.image.findUnique({
           where: { id: req.params.id },
         });
+
         if (!image) {
           res.status(404).json({ error: "Image not found." });
           return;
         }
 
+        const authHeaders = new Headers();
+        authHeaders.set(
+          "Authorization",
+          "Basic " + btoa(IMAGE_SERVER_USERNAME + ":" + IMAGE_SERVER_PASSWORD),
+        );
         const imageServerRes = await fetch(
-          `${process.env.IMAGES_SERVER_URL}/${image.remoteKey}`,
+          `${IMAGE_SERVER_URL}/image/${image.remoteKey}`,
+          { headers: authHeaders },
         );
 
-        const buffer = await imageServerRes.arrayBuffer();
-        res.send(Buffer.from(buffer));
+        if (!imageServerRes.body) {
+          return res.status(404).send("Could not find image");
+        }
+
+        Readable.fromWeb(imageServerRes.body as ReadableStream).pipe(res);
       } catch (err) {
         next(err);
       }
