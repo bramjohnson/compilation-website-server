@@ -201,6 +201,14 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
             },
           },
         },
+        select: {
+          id: true,
+          title: true,
+          duration: true,
+          userDefinedAlbum: true,
+          nintendoMusicLibraryTrackId: true,
+          nintendoMusicLibraryTrack: true,
+        },
       });
 
       return res.json(userDefinedTrack);

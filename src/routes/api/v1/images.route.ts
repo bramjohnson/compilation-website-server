@@ -116,9 +116,18 @@ export function setupImagesRouter(prismaClient: PrismaClient): Router {
           return;
         }
 
+        const resizedBuffer = await sharp(req.file.buffer)
+          .resize({
+            width: 800,
+            height: 600,
+            fit: "inside", // Maintains aspect ratio
+          })
+          .jpeg({ quality: 80 }) // Optional: compress to JPEG
+          .toBuffer();
+
         const ownerId = user.id;
         const form = new FormData();
-        const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
+        const blob = new Blob([resizedBuffer], { type: "image/jpeg" });
         form.append("image", blob, req.file.originalname);
 
         const imageServerRes = await imageServer.postImage(form);

@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "npx tsx --watch --env-file=.env .\\src\\app.ts",
+    "updateNintendoMusic": "npx tsx --env-file=.env ./src/scripts/extract_nm_playlist_response.ts",
     "test-db": "npx tsx --env-file=.env ./src/prisma-test.ts"
   },
   "keywords": [],
