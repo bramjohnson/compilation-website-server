@@ -4,6 +4,24 @@ info:
   version: 0.0.1
 
 paths:
+  /meta/search/{content}:
+    get:
+      summary: Searches for objects from the database.
+      operationId: searchOverall
+      parameters:
+        - name: content
+          in: path
+          description: the search
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResult"
   /creator/{id}:
     get:
       summary: Gets a creator by ID.
@@ -24,7 +42,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
 
-  /compilation/:
+  /compilation/:   
     post:
       summary: Creates a compilation
       operationId: createCompilation
@@ -75,6 +93,24 @@ paths:
               schema:
                 $ref: "#/components/schemas/Compilations"
   /compilation/{id}:
+    delete:
+      summary: Deletes a compilation by ID.
+      operationId: deleteCompilationByID
+      parameters:
+        - name: id
+          in: path
+          description: Compilation ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Successfuly deletion
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Compilation"
     get:
       summary: Gets a compilation by ID.
       operationId: getCompilationByID
@@ -855,6 +891,17 @@ components:
           type: string
           description: A human-readable error message.
           example: Image not found.
+    SearchResult:
+      type: object
+      properties:
+        usersFound:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        compilationsFound:
+          type: array
+          items:
+            $ref: "#/components/schemas/Compilation"
   responses:
     BadRequest:
       description: The request was malformed or missing required fields.

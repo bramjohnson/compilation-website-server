@@ -39,11 +39,14 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
 
     const { createdAt, limit, cursor } = parseParamsResult.data;
 
-    const querySkip = cursor !== undefined ? 1 : undefined
-    const queryTake = limit || 5
-    const queryCursor = cursor !== undefined ? {
-      id: cursor
-    } : undefined
+    const querySkip = cursor !== undefined ? 1 : undefined;
+    const queryTake = limit || 5;
+    const queryCursor =
+      cursor !== undefined
+        ? {
+            id: cursor,
+          }
+        : undefined;
 
     try {
       const compilations = await prismaClient.compilation.findMany({
@@ -140,7 +143,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
         position: z.number().int().min(0),
       }),
     ),
-    nintendoMusicURL: z.url().optional()
+    nintendoMusicURL: z.url().optional(),
   });
 
   compilationRouter.put(
@@ -214,8 +217,8 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
             nintendoMusicURL: nintendoMusicURL,
             thumbnail: thumbnailID
               ? {
-                connect: { id: thumbnailID },
-              }
+                  connect: { id: thumbnailID },
+                }
               : undefined,
             compilationTracks: {
               updateMany: compilationTracks.map((track, idx) => ({
@@ -325,6 +328,50 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
           },
         });
         res.json(compilation);
+      } catch (e) {
+        console.error(e);
+        res.status(500);
+      }
+    },
+  );
+
+  compilationRouter.delete(
+    "/:id",
+    authenticateMiddlewareClosure(prismaClient),
+    async (req: RequestWithResolvableUser, res) => {
+      const compilationId = req.params.id as string;
+
+      try {
+        const compilation = await prismaClient.compilation.findUnique({
+          where: {
+            id: parseInt(compilationId),
+          },
+        });
+
+        if (compilation?.creatorId !== req.user?.id) {
+          res.status(401).json({ error: "No access to this compilation" });
+          return;
+        }
+
+        const deleteCompilationTracks =
+          prismaClient.compilationTrack.deleteMany({
+            where: {
+              compilationId: parseInt(compilationId),
+            },
+          });
+
+        const deleteCompilation = prismaClient.compilation.delete({
+          where: {
+            id: parseInt(compilationId),
+          },
+        });
+
+        await prismaClient.$transaction([
+          deleteCompilationTracks,
+          deleteCompilation,
+        ]);
+
+        res.send("deleted yipee");
       } catch (e) {
         console.error(e);
         res.status(500);

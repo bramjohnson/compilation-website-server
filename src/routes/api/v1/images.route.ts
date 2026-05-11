@@ -99,7 +99,6 @@ export function setupImagesRouter(prismaClient: PrismaClient): Router {
       res: Response,
       next: NextFunction,
     ) => {
-      console.log("FJWOEIFjowe");
       try {
         const user = req.user!;
         const type = req.params.type?.toUpperCase() as ImageType;
@@ -192,6 +191,8 @@ export function setupImagesRouter(prismaClient: PrismaClient): Router {
           `${IMAGE_SERVER_URL}/image/${image.remoteKey}`,
           { headers: authHeaders },
         );
+
+        res.setHeader("Cache-Control", "max-age=600");
 
         if (!imageServerRes.body) {
           return res.status(404).send("Could not find image");
