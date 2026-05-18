@@ -85,6 +85,8 @@ model Compilation {
   compilationTracks CompilationTrack[]
   originalRelease   DateTime?
   createdAt         DateTime              @default(now())
+
+  // @@index([creatorId, originalRelease(sort: Desc)]) // TODO: Consider this
 }
 
 model CompilationTrack {

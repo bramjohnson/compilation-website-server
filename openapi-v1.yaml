@@ -703,6 +703,10 @@ components:
           type: string
         bannerId:
           type: string
+        createdAt:
+          type: string
+        oldestCompilationDate:
+          type: string
         compilations:
           $ref: "#/components/schemas/Compilations"
         permissionsReceived:

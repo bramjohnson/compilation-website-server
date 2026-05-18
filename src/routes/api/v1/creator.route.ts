@@ -40,8 +40,9 @@ export function setupCreatorRouter(prismaClient: PrismaClient): Router {
         where: {
           id: creatorID,
         },
-        include: {
+        select: {
           compilations: {
+            orderBy: { originalRelease: "desc" },
             select: {
               id: true,
               name: true,
@@ -50,9 +51,16 @@ export function setupCreatorRouter(prismaClient: PrismaClient): Router {
             },
           },
           permissionsReceived: true,
+          createdAt: true,
+          username: true,
+          avatarId: true,
+          bannerId: true,
         },
       });
-      res.json(creator);
+      const oldestCompilationIndex = creator!.compilations.length - 1;
+      const oldestCompilationDate =
+        creator?.compilations[oldestCompilationIndex].originalRelease;
+      res.json({ ...creator, oldestCompilationDate });
     } catch (e) {
       console.error(e);
       res.status(500);
