@@ -346,7 +346,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserDefinedTracks"
+                $ref: "#/components/schemas/Users"
   /creator/compilation:
     get:
       operationId: getCompilationForAuthenticatedUser
@@ -692,6 +692,10 @@ paths:
 
 components:
   schemas:
+    Users:
+      type: array
+      items:
+        $ref: "#/components/schemas/User"
     User:
       type: object
       properties:
