@@ -44,8 +44,8 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     const queryCursor =
       cursor !== undefined
         ? {
-            id: cursor,
-          }
+          id: cursor,
+        }
         : undefined;
 
     try {
@@ -217,8 +217,8 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
             nintendoMusicURL: nintendoMusicURL,
             thumbnail: thumbnailID
               ? {
-                  connect: { id: thumbnailID },
-                }
+                connect: { id: thumbnailID },
+              }
               : undefined,
             compilationTracks: {
               updateMany: compilationTracks.map((track, idx) => ({
@@ -400,19 +400,32 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
       const body = parseResult.data;
       const { addedToNMLPlaylist } = body;
 
-      try {
-        const compilation = await prismaClient.compilation.findUnique({
-          where: {
-            id: parseInt(compilationId),
-          },
-        });
-
-        if (compilation?.creatorId !== req.user?.id) {
-          res.status(401).json({ error: "No access to this compilation" });
-          return;
+      async function canRequestingUserPatchThisCompilation(): Promise<boolean> {
+        if (req.user?.permissionsReceived.some(permission => permission.permission === "IMPERSONATE_EDIT_COMPILATION" || permission.permission === "OVERLORD")) {
+          return true;
         }
 
-        const trackId = req.params.trackId as string;
+        try {
+          const compilation = await prismaClient.compilation.findUnique({
+            where: {
+              id: parseInt(compilationId),
+            },
+          });
+
+          return compilation?.creatorId === req.user?.id
+        } catch {
+          return false
+        }
+      }
+
+      if (!canRequestingUserPatchThisCompilation()) {
+        res.status(401).json({ error: "No access to this compilation" });
+        return;
+      }
+
+      const trackId = req.params.trackId as string;
+
+      try {
         const updatedCompilationTrack =
           await prismaClient.compilationTrack.update({
             where: {
