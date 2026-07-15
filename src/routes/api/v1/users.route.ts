@@ -1,4 +1,4 @@
-import { NextFunction, request, Request, Response, Router } from "express";
+import { NextFunction, Request, Response, Router } from "express";
 import {
   PrismaClient,
   User,
@@ -7,9 +7,8 @@ import {
 import { jwtVerify, SignJWT } from "jose";
 import bcrypt from "bcrypt";
 import z from "zod";
-import { parse } from "dotenv";
-import { PrismaClientValidationError } from "../../../generated/prisma/internal/prismaNamespace";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/client";
+import { nanoid12 } from "../../../prisma";
 
 const SALT_ROUNDS = 12;
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
@@ -39,7 +38,7 @@ export function authenticateMiddlewareClosure(prismaClient: PrismaClient) {
           .json({ error: "Could not find user for the provided token" });
       }
 
-      const userID: number = parseInt(payload.sub);
+      const userID = payload.sub;
       const user = await prismaClient.user.findUnique({
         where: { id: userID },
         include: {
@@ -80,7 +79,7 @@ export function setupUserRouter(prismaClient: PrismaClient): Router {
     try {
       const hashed = await bcrypt.hash(password, SALT_ROUNDS);
       const user = await prismaClient.user.create({
-        data: { username, password: hashed },
+        data: { id: nanoid12(), username, password: hashed },
       });
 
       return res.status(201).json({
@@ -170,7 +169,7 @@ export function setupUserRouter(prismaClient: PrismaClient): Router {
       }
 
       const authenticatedUser = req.user;
-      const requestingForUserId = parseInt(req.params.id);
+      const requestingForUserId = req.params.id;
       const requestingForUser = await prismaClient.user.findUnique({
         where: { id: requestingForUserId },
       });

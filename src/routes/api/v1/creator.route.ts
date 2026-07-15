@@ -28,12 +28,7 @@ export function setupCreatorRouter(prismaClient: PrismaClient): Router {
   );
 
   creatorRouter.get("/:id", async (req, res) => {
-    const creatorIDString = req.params.id;
-    const creatorID = parseInt(creatorIDString);
-    if (Number.isNaN(creatorID)) {
-      res.status(403).json({ error: "Could not parse creator ID" });
-      return;
-    }
+    const creatorID = req.params.id;
 
     try {
       const creator = await prismaClient.user.findUnique({
@@ -41,6 +36,7 @@ export function setupCreatorRouter(prismaClient: PrismaClient): Router {
           id: creatorID,
         },
         select: {
+          id: true,
           compilations: {
             orderBy: { originalRelease: "desc" },
             select: {
@@ -57,6 +53,15 @@ export function setupCreatorRouter(prismaClient: PrismaClient): Router {
           bannerId: true,
         },
       });
+
+      if (creator === null) {
+        return res.status(404);
+      }
+
+      if (creator.compilations === null || creator.compilations.length === 0) {
+        return res.json({ ...creator, oldestCompilationDate: new Date() });
+      }
+
       const oldestCompilationIndex = creator!.compilations.length - 1;
       const oldestCompilationDate =
         creator?.compilations[oldestCompilationIndex].originalRelease;

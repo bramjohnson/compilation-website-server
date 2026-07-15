@@ -2,6 +2,7 @@ import { Router } from "express";
 import z from "zod";
 import { optionalStringQuery } from "../../../util/prisma.util";
 import { PrismaClient } from "../../../generated/prisma/client";
+import { nanoid12 } from "../../../prisma";
 
 export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
   const userDefinedRouter = Router();
@@ -38,7 +39,7 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
   });
 
   const UserDefinedAlbumParamsSchema = z.object({
-    id: z.string().transform(Number).pipe(z.number().int()).optional(),
+    id: z.string().optional(),
   });
 
   userDefinedRouter.get("/album/:id/track", async (req, res) => {
@@ -79,7 +80,7 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
     const { name } = query;
 
     const userDefinedAlbums = await prismaClient.userDefinedAlbum.create({
-      data: { name },
+      data: { id: nanoid12(), name },
     });
 
     res.json(userDefinedAlbums);
@@ -126,7 +127,7 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
   });
 
   const UserDefinedTrackCreationSchema = z.object({
-    userDefinedAlbumId: z.string().transform(Number).pipe(z.number().int()),
+    userDefinedAlbumId: z.string(),
     title: z.string(),
   });
 
@@ -144,6 +145,7 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
 
     const userDefinedTrack = await prismaClient.userDefinedTrack.create({
       data: {
+        id: nanoid12(),
         title,
         duration: 0,
         userDefinedAlbum: {
@@ -159,11 +161,11 @@ export function setupUserDefinedRouter(prismaClient: PrismaClient): Router {
   });
 
   const UserDefinedTrackParamsSchema = z.object({
-    id: z.string().transform(Number).pipe(z.number().int()),
+    id: z.string(),
   });
 
   const UserDefinedTrackPatchSchema = z.object({
-    nintendoMusicTrackId: z.int().optional(),
+    nintendoMusicTrackId: z.string().optional(),
   });
 
   userDefinedRouter.patch("/track/:id", async (req, res) => {

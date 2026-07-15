@@ -32,8 +32,7 @@ paths:
           description: Compilation ID
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "200":
           description: Successful query
@@ -56,14 +55,14 @@ paths:
                 title:
                   type: string
                 creatorID:
-                  type: integer
+                  type: string
                 userDefinedTrackIDs:
                   type: array
                   items:
                     type: object
                     properties:
                       id:
-                        type: integer
+                        type: string
                       position:
                         type: integer
       responses:
@@ -102,8 +101,7 @@ paths:
           description: Compilation ID
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "200":
           description: Successfuly deletion
@@ -120,8 +118,7 @@ paths:
           description: Compilation ID
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "200":
           description: Successfuly query
@@ -138,8 +135,7 @@ paths:
           description: Compilation ID
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
       requestBody:
         required: true
         content:
@@ -150,7 +146,7 @@ paths:
                 title:
                   type: string
                 creatorID:
-                  type: integer
+                  type: string
                 thumbnailID:
                   type: string
                 originalRelease:
@@ -166,7 +162,7 @@ paths:
                     type: object
                     properties:
                       id:
-                        type: integer
+                        type: string
                       position:
                         type: integer
                 compilationTracks:
@@ -175,7 +171,7 @@ paths:
                     type: object
                     properties:
                       id:
-                        type: integer
+                        type: string
                       position:
                         type: integer
       responses:
@@ -225,7 +221,7 @@ paths:
           required: true
           in: path
           schema:
-            type: integer
+            type: string
         - name: title
           in: query
           description: The title of the track
@@ -248,7 +244,7 @@ paths:
           required: true
           in: path
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
@@ -257,7 +253,7 @@ paths:
               type: object
               properties:
                 nintendoMusicTrackId:
-                  type: integer
+                  type: string
       responses:
         "200":
           description: Successful track update
@@ -272,7 +268,7 @@ paths:
         - name: userDefinedAlbumId
           in: query
           schema:
-            type: integer
+            type: string
         - name: title
           in: query
           schema:
@@ -331,7 +327,7 @@ paths:
           description: The ID of the creator
           required: false
           schema:
-            type: integer
+            type: string
           example: 1
         - name: username
           in: query
@@ -399,7 +395,7 @@ paths:
           description: album ID
           required: true
           schema:
-            type: integer
+            type: string
             format: int64
       responses:
         "200":
@@ -418,8 +414,7 @@ paths:
           description: album ID
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
         - name: title
           in: query
           description: The title of the track
@@ -458,7 +453,7 @@ paths:
         - name: nintendoMusicAlbumId
           in: query
           schema:
-            type: integer
+            type: string
         - name: title
           in: query
           schema:
@@ -479,8 +474,7 @@ paths:
           description: user ID
           required: true
           schema:
-            type: integer
-            format: int64
+            type: string
       requestBody:
         required: false
         content:
@@ -560,14 +554,14 @@ paths:
           description: compilation ID
           required: true
           schema:
-            type: integer
+            type: string
             format: int64
         - name: trackId
           in: path
           description: track ID
           required: true
           schema:
-            type: integer
+            type: string
             format: int64
       responses:
         "200":
@@ -700,7 +694,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         username:
           type: string
         avatarId:
@@ -723,7 +717,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         permission:
           $ref: "#/components/schemas/Permission"
     Permission:
@@ -747,7 +741,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         name:
           type: string
         description:
@@ -759,7 +753,7 @@ components:
         nintendoMusicURL:
           type: string
         creatorId:
-          type: integer
+          type: string
         thumbnail:
           $ref: "#/components/schemas/Image"
         thumbnailId:
@@ -784,7 +778,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         position:
           type: integer
         addedToNMLPlaylist:
@@ -799,7 +793,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         name:
           type: string
     UserDefinedTracks:
@@ -810,7 +804,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         title:
           type: string
         duration:
@@ -820,16 +814,16 @@ components:
         userDefinedAlbum:
           $ref: "#/components/schemas/UserDefinedAlbum"
         nintendoMusicLibraryTrackId:
-          type: integer
+          type: string
         nintendoMusicLibraryTrack:
           $ref: "#/components/schemas/NintendoMusicTrack"
         spotifyGameTrackId:
-          type: integer
+          type: string
     NintendoMusicAlbum:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         name:
           type: string
     NintendoMusicAlbums:
@@ -840,7 +834,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         name:
           type: string
         tracks:
@@ -849,7 +843,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         title:
           type: string
         duration:
@@ -862,7 +856,7 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
         title:
           type: string
         nintendoMusicLibraryGameAlbum:
@@ -885,7 +879,7 @@ components:
         type:
           $ref: "#/components/schemas/ImageType"
         ownerId:
-          type: integer
+          type: string
           description: The ID of the entity that owns this image.
           example: 1
         path:

@@ -10,7 +10,7 @@ datasource db {
 }
 
 model User {
-  id                  Int              @id @default(autoincrement())
+  id                  String           @id
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
   username            String           @unique
@@ -27,10 +27,10 @@ model User {
 }
 
 model UserPermission {
-  id         Int        @id @default(autoincrement())
+  id         String     @id
   permission Permission
-  grantorId  Int
-  granteeId  Int
+  grantorId  String
+  granteeId  String
   createdAt  DateTime   @default(now())
   grantee    User       @relation("PermissionsReceived", fields: [granteeId], references: [id])
   grantor    User       @relation("PermissionsGranted", fields: [grantorId], references: [id])
@@ -39,43 +39,43 @@ model UserPermission {
 }
 
 model SpotifyGameAlbum {
-  id             Int                @id @default(autoincrement())
+  id             String             @id
   name           String
-  spotifyAlbumId Int
+  spotifyAlbumId String
   tracks         SpotifyGameTrack[]
 }
 
 model SpotifyGameTrack {
-  id                 Int                @id @default(autoincrement())
+  id                 String             @id
   title              String
   duration           Int
-  spotifyGameAlbumId Int?
+  spotifyGameAlbumId String?
   spotifyGameAlbum   SpotifyGameAlbum?  @relation(fields: [spotifyGameAlbumId], references: [id])
   userDefinedTracks  UserDefinedTrack[]
 }
 
 model NintendoMusicLibraryGameAlbum {
-  id              Int                         @id @default(autoincrement())
+  id              String                      @id
   name            String
   nintendoMusicId String?                     @unique
   tracks          NintendoMusicLibraryTrack[]
 }
 
 model NintendoMusicLibraryTrack {
-  id                              Int                            @id @default(autoincrement())
+  id                              String                         @id
   title                           String
   duration                        Int
-  nintendoMusicLibraryGameAlbumId Int?
+  nintendoMusicLibraryGameAlbumId String?
   nintendoMusicId                 String?                        @unique
   nintendoMusicLibraryGameAlbum   NintendoMusicLibraryGameAlbum? @relation(fields: [nintendoMusicLibraryGameAlbumId], references: [id])
   userDefinedTracks               UserDefinedTrack[]
 }
 
 model Compilation {
-  id                Int                   @id @default(autoincrement())
+  id                String                @id
   name              String
   description       String
-  creatorId         Int
+  creatorId         String
   thumbnailId       String?
   thumbnail         Image?                @relation(fields: [thumbnailId], references: [id])
   nintendoMusicURL  String?
@@ -90,28 +90,28 @@ model Compilation {
 }
 
 model CompilationTrack {
-  id                 Int              @id @default(autoincrement())
-  compilationId      Int
+  id                 String           @id
+  compilationId      String
   position           Int
   addedToNMLPlaylist Boolean
-  userDefinedTrackId Int
+  userDefinedTrackId String
   compilation        Compilation      @relation(fields: [compilationId], references: [id])
   userDefinedTrack   UserDefinedTrack @relation(fields: [userDefinedTrackId], references: [id])
 }
 
 model UserDefinedAlbum {
-  id     Int                @id @default(autoincrement())
+  id     String             @id
   name   String             @unique
   tracks UserDefinedTrack[]
 }
 
 model UserDefinedTrack {
-  id                          Int                        @id @default(autoincrement())
+  id                          String                     @id
   title                       String
   duration                    Int
-  userDefinedAlbumId          Int
-  nintendoMusicLibraryTrackId Int?
-  spotifyGameTrackId          Int?
+  userDefinedAlbumId          String
+  nintendoMusicLibraryTrackId String?
+  spotifyGameTrackId          String?
   compilationTracks           CompilationTrack[]
   nintendoMusicLibraryTrack   NintendoMusicLibraryTrack? @relation(fields: [nintendoMusicLibraryTrackId], references: [id])
   spotifyGameTrack            SpotifyGameTrack?          @relation(fields: [spotifyGameTrackId], references: [id])
@@ -143,7 +143,7 @@ model Image {
   id           String        @id @default(cuid())
   remoteKey    String        @unique
   type         ImageType
-  ownerId      Int
+  ownerId      String
   owner        User          @relation("OwnedImages", fields: [ownerId], references: [id])
   createdAt    DateTime      @default(now())
   compilations Compilation[]

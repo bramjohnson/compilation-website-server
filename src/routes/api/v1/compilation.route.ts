@@ -5,6 +5,7 @@ import {
   authenticateMiddlewareClosure,
   RequestWithResolvableUser,
 } from "./users.route";
+import { nanoid12 } from "../../../prisma";
 
 export function setupCompilationRouter(prismaClient: PrismaClient): Router {
   const compilationRouter = Router();
@@ -44,8 +45,8 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     const queryCursor =
       cursor !== undefined
         ? {
-          id: cursor,
-        }
+            id: cursor,
+          }
         : undefined;
 
     try {
@@ -127,19 +128,19 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
 
   const CompilationCreationBodySchema = z.object({
     title: z.string().nonempty(),
-    creatorID: z.number().int().positive(),
+    creatorID: z.string(),
     thumbnailID: z.string().optional(),
     visibility: z.string(),
     originalRelease: z.iso.datetime().optional(),
     userDefinedTracks: z.array(
       z.object({
-        id: z.number().int().positive(),
+        id: z.string(),
         position: z.number().int().min(0),
       }),
     ),
     compilationTracks: z.array(
       z.object({
-        id: z.number().int().positive(),
+        id: z.string(),
         position: z.number().int().min(0),
       }),
     ),
@@ -217,8 +218,8 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
             nintendoMusicURL: nintendoMusicURL,
             thumbnail: thumbnailID
               ? {
-                connect: { id: thumbnailID },
-              }
+                  connect: { id: thumbnailID },
+                }
               : undefined,
             compilationTracks: {
               updateMany: compilationTracks.map((track, idx) => ({
@@ -227,6 +228,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
               })),
               createMany: {
                 data: userDefinedTracks.map((track, idx) => ({
+                  id: nanoid12(),
                   userDefinedTrackId: track.id,
                   position: track.position,
                   addedToNMLPlaylist: false,
@@ -265,10 +267,10 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
   );
 
   const CompilationIDBodySchema = z.object({
-    creatorID: z.number().int().positive(),
+    creatorID: z.string(),
     userDefinedTrackIDs: z.array(
       z.object({
-        id: z.number().int().positive(),
+        id: z.string(),
         position: z.number().int().min(0),
       }),
     ),
@@ -294,6 +296,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
       try {
         const compilation = await prismaClient.compilation.create({
           data: {
+            id: nanoid12(),
             name: title,
             description: "",
             creator: {
@@ -301,6 +304,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
             },
             compilationTracks: {
               create: userDefinedTrackIDs.map((track) => ({
+                id: nanoid12(),
                 position: track.position,
                 userDefinedTrack: {
                   connect: { id: track.id },
@@ -344,7 +348,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
       try {
         const compilation = await prismaClient.compilation.findUnique({
           where: {
-            id: parseInt(compilationId),
+            id: compilationId,
           },
         });
 
@@ -356,13 +360,13 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
         const deleteCompilationTracks =
           prismaClient.compilationTrack.deleteMany({
             where: {
-              compilationId: parseInt(compilationId),
+              compilationId: compilationId,
             },
           });
 
         const deleteCompilation = prismaClient.compilation.delete({
           where: {
-            id: parseInt(compilationId),
+            id: compilationId,
           },
         });
 
@@ -401,20 +405,26 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
       const { addedToNMLPlaylist } = body;
 
       async function canRequestingUserPatchThisCompilation(): Promise<boolean> {
-        if (req.user?.permissionsReceived.some(permission => permission.permission === "IMPERSONATE_EDIT_COMPILATION" || permission.permission === "OVERLORD")) {
+        if (
+          req.user?.permissionsReceived.some(
+            (permission) =>
+              permission.permission === "IMPERSONATE_EDIT_COMPILATION" ||
+              permission.permission === "OVERLORD",
+          )
+        ) {
           return true;
         }
 
         try {
           const compilation = await prismaClient.compilation.findUnique({
             where: {
-              id: parseInt(compilationId),
+              id: compilationId,
             },
           });
 
-          return compilation?.creatorId === req.user?.id
+          return compilation?.creatorId === req.user?.id;
         } catch {
-          return false
+          return false;
         }
       }
 
@@ -429,7 +439,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
         const updatedCompilationTrack =
           await prismaClient.compilationTrack.update({
             where: {
-              id: parseInt(trackId),
+              id: trackId,
             },
             data: {
               addedToNMLPlaylist: addedToNMLPlaylist,
