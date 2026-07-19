@@ -79,8 +79,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
   });
 
   compilationRouter.get("/:id", async (req, res) => {
-    const compilationIDString = req.params.id;
-    const compilationID = parseInt(compilationIDString);
+    const compilationID = req.params.id;
 
     try {
       const compilation = await prismaClient.compilation.findUnique({
@@ -123,7 +122,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
   });
 
   const CompilationCreationParamsSchema = z.object({
-    id: z.string().transform(Number).pipe(z.number().int()).optional(),
+    id: z.string().optional(),
   });
 
   const CompilationCreationBodySchema = z.object({
@@ -132,18 +131,22 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     thumbnailID: z.string().optional(),
     visibility: z.string(),
     originalRelease: z.iso.datetime().optional(),
-    userDefinedTracks: z.array(
-      z.object({
-        id: z.string(),
-        position: z.number().int().min(0),
-      }),
-    ),
-    compilationTracks: z.array(
-      z.object({
-        id: z.string(),
-        position: z.number().int().min(0),
-      }),
-    ),
+    userDefinedTracks: z
+      .array(
+        z.object({
+          id: z.string(),
+          position: z.number().int().min(0),
+        }),
+      )
+      .optional(),
+    compilationTracks: z
+      .array(
+        z.object({
+          id: z.string(),
+          position: z.number().int().min(0),
+        }),
+      )
+      .optional(),
     nintendoMusicURL: z.url().optional(),
   });
 
@@ -222,18 +225,20 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
                 }
               : undefined,
             compilationTracks: {
-              updateMany: compilationTracks.map((track, idx) => ({
+              updateMany: compilationTracks?.map((track, idx) => ({
                 where: { id: track.id },
                 data: { position: track.position },
               })),
-              createMany: {
-                data: userDefinedTracks.map((track, idx) => ({
-                  id: nanoid12(),
-                  userDefinedTrackId: track.id,
-                  position: track.position,
-                  addedToNMLPlaylist: false,
-                })),
-              },
+              createMany: userDefinedTracks
+                ? {
+                    data: userDefinedTracks.map((track, idx) => ({
+                      id: nanoid12(),
+                      userDefinedTrackId: track.id,
+                      position: track.position,
+                      addedToNMLPlaylist: false,
+                    })),
+                  }
+                : undefined,
             },
           },
           include: {
@@ -267,14 +272,18 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
   );
 
   const CompilationIDBodySchema = z.object({
-    creatorID: z.string(),
-    userDefinedTrackIDs: z.array(
-      z.object({
-        id: z.string(),
-        position: z.number().int().min(0),
-      }),
-    ),
     title: z.string(),
+    description: z.string(),
+    creatorID: z.string(),
+    thumbnailID: z.string(),
+    userDefinedTrackIDs: z
+      .array(
+        z.object({
+          id: z.string(),
+          position: z.number().int().min(0),
+        }),
+      )
+      .optional(),
   });
 
   compilationRouter.post(
@@ -291,19 +300,28 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
       }
 
       const body = parseResult.data;
-      const { title, userDefinedTrackIDs, creatorID } = body;
+      const {
+        title,
+        description,
+        userDefinedTrackIDs,
+        creatorID,
+        thumbnailID,
+      } = body;
 
       try {
         const compilation = await prismaClient.compilation.create({
           data: {
             id: nanoid12(),
             name: title,
-            description: "",
+            description: description,
             creator: {
               connect: { id: creatorID },
             },
+            thumbnail: {
+              connect: { id: thumbnailID },
+            },
             compilationTracks: {
-              create: userDefinedTrackIDs.map((track) => ({
+              create: userDefinedTrackIDs?.map((track) => ({
                 id: nanoid12(),
                 position: track.position,
                 userDefinedTrack: {
