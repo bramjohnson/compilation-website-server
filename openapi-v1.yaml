@@ -41,30 +41,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
 
-  /compilation/:   
+  /compilation/:
     post:
       summary: Creates a compilation
       operationId: createCompilation
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                creatorID:
-                  type: string
-                userDefinedTrackIDs:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                      position:
-                        type: integer
+        $ref: "#/components/requestBodies/PutOrCreateCompilation"
       responses:
         "200":
           description: Successful creation
@@ -137,43 +119,7 @@ paths:
           schema:
             type: string
       requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                creatorID:
-                  type: string
-                thumbnailID:
-                  type: string
-                originalRelease:
-                  type: string
-                  format: date-time
-                nintendoMusicURL:
-                  type: string
-                visibility:
-                  $ref: "#/components/schemas/CompilationVisibility"
-                userDefinedTracks:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                      position:
-                        type: integer
-                compilationTracks:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                      position:
-                        type: integer
+        $ref: "#/components/requestBodies/PutOrCreateCompilation"
       responses:
         "200":
           description: Successfuly query
@@ -690,6 +636,28 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/User"
+    NewUserDefinedTrack:
+      type: object
+      properties:
+        trackType:
+          type: string
+        userDefinedTrackIDs:
+          type: array
+          items:
+            type: string
+        position:
+          type: integer
+    PutCompilationTrack:
+      type: object
+      properties:
+        trackType:
+          type: string
+        compilationTrackIDs:
+          type: array
+          items:
+            type: string
+        position:
+          type: integer
     User:
       type: object
       properties:
@@ -904,6 +872,65 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Compilation"
+  requestBodies:
+    PutOrCreateCompilation:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              description:
+                type: string
+              creatorId:
+                type: string
+              thumbnailId:
+                type: string
+              releaseDate:
+                type: string
+                format: date-time
+              nintendoMusicURL:
+                type: string
+              visibility:
+                $ref: "#/components/schemas/CompilationVisibility"
+              tracklist:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - trackType
+                  properties:
+                    trackType:
+                      type: string
+                  oneOf:
+                    - $ref: "#/components/schemas/NewUserDefinedTrack"
+                    - $ref: "#/components/schemas/PutCompilationTrack"
+                  discriminator:
+                    propertyName: trackType
+                    mapping:
+                      newUserDefined: "#/components/schemas/NewUserDefinedTrack"
+                      compilationTrack: "#/components/schemas/PutCompilationTrack"
+              userDefinedTracks:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    position:
+                      type: integer
+              compilationTracks:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    position:
+                      type: integer
+
   responses:
     BadRequest:
       description: The request was malformed or missing required fields.
