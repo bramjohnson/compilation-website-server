@@ -645,8 +645,6 @@ components:
           type: array
           items:
             type: string
-        position:
-          type: integer
     PutCompilationTrack:
       type: object
       properties:
@@ -656,8 +654,6 @@ components:
           type: array
           items:
             type: string
-        position:
-          type: integer
     User:
       type: object
       properties:

@@ -45,8 +45,8 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     const queryCursor =
       cursor !== undefined
         ? {
-          id: cursor,
-        }
+            id: cursor,
+          }
         : undefined;
 
     try {
@@ -150,18 +150,20 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     nintendoMusicURL: z.url().optional(),
   });
 
-  const CompilationPutTrackUnionSchema = z.discriminatedUnion("trackType", [
-    z.object({
-      trackType: z.literal("newUserDefined"),
-      userDefinedTrackId: z.string(),
-      position: z.number().int().min(0, "Position must be specified"),
-    }),
-    z.object({
-      trackType: z.literal("compilationTrack"),
-      compilationTrackId: z.string(),
-      position: z.number().int().min(0, "Position must be specified"),
-    })
-  ]).array()
+  const CompilationPutTrackUnionSchema = z
+    .discriminatedUnion("trackType", [
+      z.object({
+        trackType: z.literal("newUserDefined"),
+        userDefinedTrackId: z.string(),
+        // position: z.number().int().min(0, "Position must be specified"),
+      }),
+      z.object({
+        trackType: z.literal("compilationTrack"),
+        compilationTrackId: z.string(),
+        // position: z.number().int().min(0, "Position must be specified"),
+      }),
+    ])
+    .array();
 
   const CompilationPutFormSchema = z.object({
     id: z.string().optional(),
@@ -173,10 +175,8 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
     releaseDate: z.string().min(1, "Release date is required"), // Can map to Calendar component
     visibility: z.enum(["PUBLIC", "PRIVATE"]),
     creatorId: z.string(),
-    nintendoMusicURL: z.httpUrl().nullable(),
-    thumbnailId: z
-      .string("needed thumbnail")
-      .nonempty("needed thumbnail"),
+    nintendoMusicURL: z.httpUrl().optional(),
+    thumbnailId: z.string("needed thumbnail").nonempty("needed thumbnail"),
     tracklist: CompilationPutTrackUnionSchema,
   });
 
@@ -213,7 +213,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
         visibility,
         nintendoMusicURL,
         releaseDate,
-        tracklist
+        tracklist,
       } = body;
 
       // Return early if the user is requesting to impersonate another user and does not have the sufficient permissions
@@ -250,41 +250,57 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
             nintendoMusicURL: nintendoMusicURL,
             thumbnail: thumbnailId
               ? {
-                connect: { id: thumbnailId },
-              }
+                  connect: { id: thumbnailId },
+                }
               : undefined,
-            compilationTracks: tracklist.reduce(({ updateMany, createMany }: { updateMany: any, createMany: any }, track) => {
-              switch (track.trackType) {
-                case "newUserDefined": { // Create a new CompilationTrack for the UserDefinedTrack.
-                  return {
+            compilationTracks: tracklist
+              .map((track, pos) => ({
+                track: track,
+                position: pos,
+              }))
+              .reduce(
+                (
+                  {
                     updateMany,
-                    createMany: {
-                      data: [
-                        ...createMany.data,
-                        {
-                          id: nanoid12(),
-                          userDefinedTrackId: track.userDefinedTrackId,
-                          position: track.position,
-                          addedToNMLPlaylist: false
-                        }
-                      ]
+                    createMany,
+                  }: { updateMany: any; createMany: any },
+                  { track, position },
+                ) => {
+                  switch (track.trackType) {
+                    case "newUserDefined": {
+                      // Create a new CompilationTrack for the UserDefinedTrack.
+                      return {
+                        updateMany,
+                        createMany: {
+                          data: [
+                            ...createMany.data,
+                            {
+                              id: nanoid12(),
+                              userDefinedTrackId: track.userDefinedTrackId,
+                              position: position,
+                              addedToNMLPlaylist: false,
+                            },
+                          ],
+                        },
+                      };
+                    }
+                    case "compilationTrack": {
+                      // Update a CompilationTrack on this Compilation with new position
+                      return {
+                        updateMany: [
+                          ...updateMany,
+                          {
+                            where: { id: track.compilationTrackId },
+                            data: { position: position },
+                          },
+                        ],
+                        createMany,
+                      };
                     }
                   }
-                }
-                case "compilationTrack": { // Update a CompilationTrack on this Compilation with new position
-                  return {
-                    updateMany: [
-                      ...updateMany,
-                      {
-                        where: { id: track.compilationTrackId },
-                        data: { position: track.position }
-                      }
-                    ],
-                    createMany
-                  }
-                }
-              }
-            }, ({ updateMany: [], createMany: { data: [] } }))
+                },
+                { updateMany: [], createMany: { data: [] } },
+              ),
             //     {
             //   updateMany: compilationTracks?.map((track, idx) => ({
             //     where: { id: track.id },
@@ -335,16 +351,9 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
   const CompilationIDBodySchema = z.object({
     title: z.string(),
     description: z.string(),
-    creatorID: z.string(),
-    thumbnailID: z.string(),
-    userDefinedTrackIDs: z
-      .array(
-        z.object({
-          id: z.string(),
-          position: z.number().int().min(0),
-        }),
-      )
-      .optional(),
+    creatorId: z.string(),
+    thumbnailId: z.string(),
+    tracklist: CompilationPutTrackUnionSchema,
   });
 
   compilationRouter.post(
@@ -361,13 +370,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
       }
 
       const body = parseResult.data;
-      const {
-        title,
-        description,
-        userDefinedTrackIDs,
-        creatorID,
-        thumbnailID,
-      } = body;
+      const { title, description, tracklist, creatorId, thumbnailId } = body;
 
       try {
         const compilation = await prismaClient.compilation.create({
@@ -376,20 +379,22 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
             name: title,
             description: description,
             creator: {
-              connect: { id: creatorID },
+              connect: { id: creatorId },
             },
             thumbnail: {
-              connect: { id: thumbnailID },
+              connect: { id: thumbnailId },
             },
             compilationTracks: {
-              create: userDefinedTrackIDs?.map((track) => ({
-                id: nanoid12(),
-                position: track.position,
-                userDefinedTrack: {
-                  connect: { id: track.id },
-                },
-                addedToNMLPlaylist: false,
-              })),
+              create: tracklist
+                ?.filter((track) => track.trackType === "newUserDefined")
+                .map((track, pos) => ({
+                  id: nanoid12(),
+                  position: pos,
+                  userDefinedTrack: {
+                    connect: { id: track.userDefinedTrackId },
+                  },
+                  addedToNMLPlaylist: false,
+                })),
             },
           },
           include: {
