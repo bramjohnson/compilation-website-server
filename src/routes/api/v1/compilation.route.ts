@@ -235,6 +235,57 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
         return;
       }
 
+      const {
+        updateMany: updateManyTracklist,
+        createMany: createManyTracklist,
+      } = tracklist
+        .map((track, pos) => ({
+          track: track,
+          position: pos,
+        }))
+        .reduce(
+          (
+            { updateMany, createMany }: { updateMany: any; createMany: any },
+            { track, position },
+          ) => {
+            switch (track.trackType) {
+              case "newUserDefined": {
+                // Create a new CompilationTrack for the UserDefinedTrack.
+                return {
+                  updateMany,
+                  createMany: {
+                    data: [
+                      ...createMany.data,
+                      {
+                        id: nanoid12(),
+                        userDefinedTrackId: track.userDefinedTrackId,
+                        position: position,
+                        addedToNMLPlaylist: false,
+                      },
+                    ],
+                  },
+                };
+              }
+              case "compilationTrack": {
+                // Update a CompilationTrack on this Compilation with new position
+                return {
+                  updateMany: [
+                    ...updateMany,
+                    {
+                      where: { id: track.compilationTrackId },
+                      data: { position: position },
+                    },
+                  ],
+                  createMany,
+                };
+              }
+            }
+          },
+          { updateMany: [], createMany: { data: [] } },
+        );
+
+      console.log(tracklist, updateManyTracklist, createManyTracklist);
+
       try {
         const compilation = await prismaClient.compilation.update({
           where: {
@@ -253,70 +304,17 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
                   connect: { id: thumbnailId },
                 }
               : undefined,
-            compilationTracks: tracklist
-              .map((track, pos) => ({
-                track: track,
-                position: pos,
-              }))
-              .reduce(
-                (
-                  {
-                    updateMany,
-                    createMany,
-                  }: { updateMany: any; createMany: any },
-                  { track, position },
-                ) => {
-                  switch (track.trackType) {
-                    case "newUserDefined": {
-                      // Create a new CompilationTrack for the UserDefinedTrack.
-                      return {
-                        updateMany,
-                        createMany: {
-                          data: [
-                            ...createMany.data,
-                            {
-                              id: nanoid12(),
-                              userDefinedTrackId: track.userDefinedTrackId,
-                              position: position,
-                              addedToNMLPlaylist: false,
-                            },
-                          ],
-                        },
-                      };
-                    }
-                    case "compilationTrack": {
-                      // Update a CompilationTrack on this Compilation with new position
-                      return {
-                        updateMany: [
-                          ...updateMany,
-                          {
-                            where: { id: track.compilationTrackId },
-                            data: { position: position },
-                          },
-                        ],
-                        createMany,
-                      };
-                    }
-                  }
+            compilationTracks: {
+              deleteMany: {
+                id: {
+                  notIn: tracklist
+                    .filter((track) => track.trackType === "compilationTrack")
+                    .map((track) => track.compilationTrackId),
                 },
-                { updateMany: [], createMany: { data: [] } },
-              ),
-            //     {
-            //   updateMany: compilationTracks?.map((track, idx) => ({
-            //     where: { id: track.id },
-            //     data: { position: track.position },
-            //   })),
-            //   createMany: userDefinedTracks
-            //     ? {
-            //       data: userDefinedTracks.map((track, idx) => ({
-            //         id: nanoid12(),
-            //         userDefinedTrackId: track.id,
-            //         position: track.position,
-            //         addedToNMLPlaylist: false,
-            //       })),
-            //     }
-            //     : undefined,
-            // },
+              },
+              updateMany: updateManyTracklist,
+              createMany: createManyTracklist,
+            },
           },
           include: {
             creator: true,
@@ -341,6 +339,7 @@ export function setupCompilationRouter(prismaClient: PrismaClient): Router {
           },
         });
         res.json(compilation);
+        console.log(compilation);
       } catch (e) {
         console.error(e);
         res.status(500);
