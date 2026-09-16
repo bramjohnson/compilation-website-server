@@ -10,6 +10,8 @@ import {
 } from "./users.route";
 import { Readable } from "stream";
 import { ReadableStream } from "node:stream/web";
+import { Bucket$, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { nanoid } from "nanoid";
 
 // -------------------------------------------------------
 // Config
@@ -20,17 +22,21 @@ const IMAGE_SERVER_PASSWORD =
   process.env.IMAGES_SERVER_PASSWORD || "IMAGE_SERVER_PASSWORD";
 const IMAGE_SERVER_URL = process.env.IMAGES_SERVER_URL || "http://example.com";
 
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY
+
 const UPLOAD_DIR = path.resolve("uploads");
 const CACHE_DIR = path.resolve("uploads/cache");
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const IMAGE_CONSTRAINTS: Record<ImageType, { width: number; height: number }> =
-  {
-    PROFILE_PICTURE: { width: 1024, height: 1024 },
-    THUMBNAIL: { width: 1920, height: 1080 },
-    BANNER: { width: 1920, height: 240 },
-  };
+{
+  PROFILE_PICTURE: { width: 1024, height: 1024 },
+  THUMBNAIL: { width: 1920, height: 1080 },
+  BANNER: { width: 1920, height: 240 },
+};
 
 // -------------------------------------------------------
 // Multer — store in memory so Sharp can process before saving
@@ -44,46 +50,9 @@ const upload = multer({
   },
 });
 
-class ImageServerInterface {
-  private username: String;
-  private password: String;
-
-  constructor(username: String, password: String) {
-    this.username = username;
-    this.password = password;
-  }
-
-  getHeaders() {
-    const authHeaders = new Headers();
-    authHeaders.set(
-      "Authorization",
-      "Basic " + btoa(this.username + ":" + this.password),
-    );
-    return authHeaders;
-  }
-
-  async getImage(id: string) {
-    return await fetch(`${IMAGE_SERVER_URL}/image/${id}`, {
-      headers: this.getHeaders(),
-    });
-  }
-
-  async postImage(form: FormData) {
-    return await fetch(IMAGE_SERVER_URL, {
-      method: "POST",
-      body: form,
-      headers: this.getHeaders(),
-    });
-  }
-}
-
 // Router
 export function setupImagesRouter(prismaClient: PrismaClient): Router {
   const router = Router();
-  const imageServer = new ImageServerInterface(
-    IMAGE_SERVER_USERNAME,
-    IMAGE_SERVER_PASSWORD,
-  );
 
   // -------------------------------------------------------
   // POST /images/upload/:type
@@ -129,16 +98,28 @@ export function setupImagesRouter(prismaClient: PrismaClient): Router {
         const blob = new Blob([resizedBuffer], { type: "image/jpeg" });
         form.append("image", blob, req.file.originalname);
 
-        const imageServerRes = await imageServer.postImage(form);
-        console.log(imageServerRes);
+        const remoteKey = nanoid()
+        const r2Client = new S3Client({
+          region: "auto",
+          endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+          credentials: {
+            accessKeyId: R2_ACCESS_KEY_ID!,
+            secretAccessKey: R2_SECRET_ACCESS_KEY!,
+          },
+        })
 
-        const responsebody = await imageServerRes.json();
-        console.log(responsebody);
-        console.log(responsebody.id);
+        console.info("sending to R2")
+        await r2Client.send(new PutObjectCommand({
+          Bucket: "vgmixes",
+          Key: remoteKey,
+          Body: resizedBuffer,
+          ContentType: "image/jpeg"
+        }))
+        console.info("sent to R2")
 
         const image = await prismaClient.image.upsert({
           where: {
-            remoteKey: responsebody.id,
+            remoteKey: remoteKey,
           },
           update: {},
           create: {
@@ -148,7 +129,7 @@ export function setupImagesRouter(prismaClient: PrismaClient): Router {
                 id: ownerId,
               },
             },
-            remoteKey: responsebody.id,
+            remoteKey: remoteKey,
           },
           select: {
             id: true,
@@ -182,23 +163,7 @@ export function setupImagesRouter(prismaClient: PrismaClient): Router {
           return;
         }
 
-        const authHeaders = new Headers();
-        authHeaders.set(
-          "Authorization",
-          "Basic " + btoa(IMAGE_SERVER_USERNAME + ":" + IMAGE_SERVER_PASSWORD),
-        );
-        const imageServerRes = await fetch(
-          `${IMAGE_SERVER_URL}/image/${image.remoteKey}`,
-          { headers: authHeaders },
-        );
-
-        res.setHeader("Cache-Control", "max-age=600");
-
-        if (!imageServerRes.body) {
-          return res.status(404).send("Could not find image");
-        }
-
-        Readable.fromWeb(imageServerRes.body as ReadableStream).pipe(res);
+        return res.json(image)
       } catch (err) {
         next(err);
       }
@@ -287,7 +252,7 @@ export function setupImagesRouter(prismaClient: PrismaClient): Router {
         await Promise.all(
           cacheFiles
             .filter((f) => f.startsWith(image.id))
-            .map((f) => fs.unlink(path.join(CACHE_DIR, f)).catch(() => {})),
+            .map((f) => fs.unlink(path.join(CACHE_DIR, f)).catch(() => { })),
         );
 
         await prismaClient.image.delete({ where: { id: image.id } });

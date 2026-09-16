@@ -547,18 +547,17 @@ paths:
 
   /images/{id}:
     get:
-      summary: Serve the original image
-      description: Returns the original (normalized) image file for the given ID.
+      summary: Get the Image object
+      description: Returns the Image object for the given ID
       parameters:
         - $ref: "#/components/parameters/ImageIdParam"
       responses:
         "200":
           description: The original image file.
           content:
-            image/webp:
+            application/json:
               schema:
-                type: string
-                format: binary
+                $ref: "#/components/schemas/Image"
         "404":
           $ref: "#/components/responses/NotFound"
         "500":
@@ -663,8 +662,12 @@ components:
           type: string
         avatarId:
           type: string
+        avatar:
+          $ref: "#/components/schemas/Image"
         bannerId:
           type: string
+        banner:
+          $ref: "#/components/schemas/Image"
         createdAt:
           type: string
         oldestCompilationDate:
@@ -850,6 +853,10 @@ components:
           type: string
           description: The URL of the image.
           example: image.png
+        remoteKey:
+          type: string
+          description: The remote key of the image
+          example: fjoweijfowaigoawi
     ErrorResponse:
       type: object
       properties:
